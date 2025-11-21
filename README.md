@@ -1,0 +1,2 @@
+# Bbuddy
+Budget management app

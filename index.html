@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Budget Manager</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <h1>Budget Manager</h1>
+        <p id="quote-of-the-day"></p>
+        <nav>
+            <ul>
+                <li><a href="#home">Home</a></li>
+                <li><a href="#addExpense">Add Expense</a></li>
+                <li><a href="#dashboard">Dashboard</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <section id="login">
+            <h2>Login</h2>
+            <form id="loginForm">
+                <label for="username">Username:</label>
+                <input type="text" id="username" name="username" required>
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" required>
+                <button type="submit">Login</button>
+            </form>
+            <h3>Don't have an account?</h3>
+            <a href="#register">Register here</a>
+        </section>
+
+        <section id="register" style="display: none;">
+            <h2>Register</h2>
+            <form id="registerForm">
+                <label for="username">Username:</label>
+                <input type="text" id="username" name="username" required>
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" required>
+                <label for="email">Email:</label>
+                <input type="email" id="email" name="email" required>
+                <button type="submit">Register</button>
+            </form>
+        </section>
+
+        <section id="home" style="display: none;">
+            <h2>Home</h2>
+            <p>Welcome to your personal budget manager!</p>
+            <p>Use the navigation to add expenses or view your dashboard.</p>
+        </section>
+
+        <section id="addExpense" style="display: none;">
+            <h2>Add Expense</h2>
+            <form id="expenseForm">
+                <label for="category">Category:</label>
+                <select id="category" name="category" required>
+                    <option value="food">Food</option>
+                    <option value="transport">Transport</option>
+                    <option value="utilities">Utilities</option>
+                    <option value="other">Other</option>
+                </select>
+                <input type="text" id="otherCategory" name="otherCategory" style="display: none;" placeholder="Enter category">
+                <label for="amount">Amount:</label>
+                <input type="number" id="amount" name="amount" step="0.01" required>
+                <label for="date">Date:</label>
+                <input type="date" id="date" name="date" required>
+                <button type="submit">Add</button>
+            </form>
+        </section>
+
+        <section id="dashboard" style="display: none;">
+            <h2>Your Dashboard</h2>
+            <div id="expenses"></div>
+        </section>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>

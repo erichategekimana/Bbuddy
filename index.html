@@ -3,79 +3,166 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Budget Manager</title>
+    <title>Bbuddy App</title>
     <link rel="stylesheet" href="styles.css">
 </head>
-<body>
-    <header>
-        <h1>Budget Manager</h1>
-        <p id="quote-of-the-day"></p>
-        <nav>
-            <ul>
-                <li><a href="#home">Home</a></li>
-                <li><a href="#addExpense">Add Expense</a></li>
-                <li><a href="#dashboard">Dashboard</a></li>
-            </ul>
-        </nav>
-    </header>
 
-    <main>
-        <section id="login">
-            <h2>Login</h2>
-            <form id="loginForm">
-                <label for="username">Username:</label>
-                <input type="text" id="username" name="username" required>
-                <label for="password">Password:</label>
-                <input type="password" id="password" name="password" required>
+<body>
+
+    <!-- ======================= LOGIN PAGE ======================= -->
+    <div id="login-page" class="page">
+        <div class="auth-container">
+            <h1>Bbuddy</h1>
+            <h3>Login</h3>
+
+            <form id="login-form">
+                <input type="email" id="login-email" placeholder="Email" required>
+                <input type="password" id="login-password" placeholder="Password" required>
                 <button type="submit">Login</button>
             </form>
-            <h3>Don't have an account?</h3>
-            <a href="#register">Register here</a>
-        </section>
 
-        <section id="register" style="display: none;">
-            <h2>Register</h2>
-            <form id="registerForm">
-                <label for="username">Username:</label>
-                <input type="text" id="username" name="username" required>
-                <label for="password">Password:</label>
-                <input type="password" id="password" name="password" required>
-                <label for="email">Email:</label>
-                <input type="email" id="email" name="email" required>
+            <p class="switch-auth">
+                Don’t have an account?
+                <a href="#" id="show-register">Create one</a>
+            </p>
+        </div>
+    </div>
+
+
+
+    <!-- ======================= REGISTER PAGE ======================= -->
+    <div id="register-page" class="page hidden">
+        <div class="auth-container">
+            <h1>Bbuddy</h1>
+            <h3>Create Account</h3>
+
+            <form id="register-form">
+                <input type="text" id="reg-username" placeholder="Username" required>
+                <input type="email" id="reg-email" placeholder="Email" required>
+                <input type="password" id="reg-password" placeholder="Password" required>
                 <button type="submit">Register</button>
             </form>
+
+            <p class="switch-auth">
+                Already have an account?
+                <a href="#" id="show-login">Login</a>
+            </p>
+        </div>
+    </div>
+
+
+
+    <!-- ======================= MAIN APP ======================= -->
+    <div id="app" class="hidden">
+
+        <!-- TOP BAR -->
+        <header id="topbar">
+    <h2>Bbuddy</h2>
+    <button id="settings-btn">Settings</button>
+</header>
+
+        <!-- NAVIGATION -->
+        <nav id="navbar">
+            <button class="nav-btn" data-page="home-section">Home</button>
+            <button class="nav-btn" data-page="dashboard-section">Dashboard</button>
+            <button class="nav-btn" data-page="add-expense-section">Add Expense</button>
+        </nav>
+
+
+
+        <!-- ======================= HOME SECTION ======================= -->
+        <section id="home-section" class="section">
+
+            <div class="card">
+                <h3>Welcome back!</h3>
+                <p id="quote">Loading inspirational quote...</p>
+            </div>
+
+            <div class="card">
+                <h3>Your Budget Plan</h3>
+                <p><strong>Total Budget:</strong> <span id="plan-amount">0</span></p>
+                <p><strong>Remaining:</strong> <span id="plan-remaining">0</span></p>
+            </div>
+
         </section>
 
-        <section id="home" style="display: none;">
-            <h2>Home</h2>
-            <p>Welcome to your personal budget manager!</p>
-            <p>Use the navigation to add expenses or view your dashboard.</p>
+
+
+        <!-- ======================= DASHBOARD SECTION ======================= -->
+        <section id="dashboard-section" class="section hidden">
+            <h2>Your Expenses</h2>
+
+            <div class="card">
+                <table id="expense-table">
+                    <thead>
+                        <tr>
+                            <th>Category</th>
+                            <th>Amount</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- JS will inject rows here -->
+                    </tbody>
+                </table>
+            </div>
         </section>
 
-        <section id="addExpense" style="display: none;">
+
+
+        <!-- ======================= ADD EXPENSE SECTION ======================= -->
+        <section id="add-expense-section" class="section hidden">
             <h2>Add Expense</h2>
-            <form id="expenseForm">
-                <label for="category">Category:</label>
-                <select id="category" name="category" required>
-                    <option value="food">Food</option>
-                    <option value="transport">Transport</option>
-                    <option value="utilities">Utilities</option>
-                    <option value="other">Other</option>
+
+            <form id="expense-form" class="card">
+                <label>Category</label>
+                <select id="expense-category" required>
+                    <option value="">Select category</option>
+                    <option value="Food">Food</option>
+                    <option value="Transport">Transport</option>
+                    <option value="Bills">Bills</option>
+                    <option value="Shopping">Shopping</option>
+                    <option value="Other">Other</option>
                 </select>
-                <input type="text" id="otherCategory" name="otherCategory" style="display: none;" placeholder="Enter category">
-                <label for="amount">Amount:</label>
-                <input type="number" id="amount" name="amount" step="0.01" required>
-                <label for="date">Date:</label>
-                <input type="date" id="date" name="date" required>
-                <button type="submit">Add</button>
+
+                <input type="text" id="other-category" placeholder="Enter your category"
+                       class="hidden">
+
+                <label>Amount</label>
+                <input type="number" id="expense-amount" placeholder="Amount" required>
+
+                <label>Date</label>
+                <input type="date" id="expense-date" required>
+
+                <button type="submit">Add Expense</button>
             </form>
         </section>
 
-        <section id="dashboard" style="display: none;">
-            <h2>Your Dashboard</h2>
-            <div id="expenses"></div>
-        </section>
-    </main>
+
+
+        <!-- ======================= SETTINGS PANEL ======================= -->
+        <div id="settings-panel" class="hidden">
+            <div class="settings-content">
+                <h3>Settings</h3>
+
+                <label>Change Name</label>
+                <input type="text" id="settings-name" placeholder="Your name">
+
+                <label>Change Profile Picture</label>
+                <input type="file" id="settings-pic">
+
+                <label>Theme</label>
+                <select id="theme-switcher">
+                    <option value="light">Light Mode</option>
+                    <option value="dark">Dark Mode</option>
+                </select>
+
+                <button id="close-settings">Close</button>
+            </div>
+        </div>
+
+    </div> <!-- end app -->
+
 
     <script src="script.js"></script>
 </body>

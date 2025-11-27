@@ -49,7 +49,7 @@ const settingsPic = document.getElementById("settings-pic");
 const themeSwitcher = document.getElementById("theme-switcher");
 
 /* BACKEND API BASE URL */
-const API = "http://10.227.124.219:5000/api";
+const API = "/api";
 
 /* AUTH TOKEN */
 let authToken = localStorage.getItem("authToken") || null;
@@ -129,21 +129,24 @@ loginForm.addEventListener("submit", async (e) => {
 
         const data = await res.json();
 
-        if (res.ok) {
-            authToken = data.access_token;
-            localStorage.setItem("authToken", data.access_token);
+        if (!res.ok) {
+            alert("Login failed: " + (data.error || "Unknown error"));
+            return;
+        }
+
+        authToken = data.access_token;
+        localStorage.setItem("authToken", data.access_token);
             
             // Show the main app
-            showPage(app);
-            showSection(homeSection);
-            loadQuote();
-            loadPlan();
-            alert("Logged in successfully!");
-        } else {
-            alert("Login failed: " + (data.message || "Unknown error"));
-        }
-    } catch (error) {
-        alert("Login error: " + error.message);
+        showPage(app);
+        showSection(homeSection);
+
+        loadQuote();
+        loadPlan();
+
+        alert("Logged in successfully!");
+    } catch (err) {
+        alert("Login error: " + err.message);
     }
 });
 

@@ -5,7 +5,7 @@ from ..models.user_model import User
 from ..database import db
 from ..schemas import RegisterSchema, LoginSchema
 from ..utils import validate_json
-from ..auth import hash_password, verify_password, create_access_token
+from ..auth import hash_password, verify_password, create_access_token, jwt_required
 
 auth_bp = Blueprint("auth", __name__)
 

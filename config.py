@@ -11,4 +11,4 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     GEMINI_API_KEY = "AIzaSyB0Ed8oBdqwIgLfjn4uzXreH4xZu8sXWWo"
 
-GEMINI_API_KEY = "AIzaSyB0Ed8oBdqwIgLfjn4uzXreH4xZu8sXWWo"
+GEMINI_API_KEY = ""

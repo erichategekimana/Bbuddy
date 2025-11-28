@@ -28,3 +28,37 @@ class AddExpenseSchema(BaseModel):
     category_id: int
     amount: condecimal(gt=0)
     description: Optional[constr(max_length=255)] = None
+
+# NEW SCHEMAS NEEDED:
+
+class CategorySchema(BaseModel):
+    name: constr(min_length=1, max_length=100)
+    description: Optional[constr(max_length=500)] = None
+
+class UpdateProfileSchema(BaseModel):
+    username: Optional[constr(min_length=3, max_length=255)] = None
+    email: Optional[EmailStr] = None
+
+class ChangePasswordSchema(BaseModel):
+    old_password: constr(min_length=1)
+    new_password: constr(min_length=6)
+
+class UpdatePictureSchema(BaseModel):
+    profile_picture_url: constr(min_length=1)
+
+class UpdateBudgetPlanSchema(BaseModel):
+    category_id: Optional[int] = None
+    amount: Optional[condecimal(gt=0)] = None
+    start_date: Optional[date] = None
+    end_date: Optional[date] = None
+
+    @validator("end_date")
+    def end_after_start(cls, v, values):
+        if "start_date" in values and v and values["start_date"] and v < values["start_date"]:
+            raise ValueError("end_date must be >= start_date")
+        return v
+
+class UpdateExpenseSchema(BaseModel):
+    category_id: Optional[int] = None
+    amount: Optional[condecimal(gt=0)] = None
+    description: Optional[constr(max_length=255)] = None

@@ -136,8 +136,7 @@ loginForm.addEventListener("submit", async (e) => {
 
         authToken = data.access_token;
         localStorage.setItem("authToken", data.access_token);
-            
-            // Show the main app
+
         showPage(app);
         showSection(homeSection);
 
@@ -149,6 +148,7 @@ loginForm.addEventListener("submit", async (e) => {
         alert("Login error: " + err.message);
     }
 });
+
 
 /* --------------------------
    REGISTER
@@ -171,18 +171,19 @@ registerForm.addEventListener("submit", async (e) => {
 
         const data = await res.json();
 
-        if (res.ok) {
-            alert("Registration successful! Please log in.");
-            showPage(loginPage);
-            // Clear form
-            registerForm.reset();
-        } else {
-            alert("Registration failed: " + (data.message || "Unknown error"));
+        if (!res.ok) {
+            alert("Registration failed: " + (data.error || "Unknown error"));
+            return;
         }
-    } catch (error) {
-        alert("Registration error: " + error.message);
+
+        alert("Registration successful! Please log in.");
+        registerForm.reset();
+        showPage(loginPage);
+    } catch (err) {
+        alert("Registration error: " + err.message);
     }
 });
+
 
 /* --------------------------
    LOAD QUOTE

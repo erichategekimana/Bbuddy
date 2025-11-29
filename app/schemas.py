@@ -20,7 +20,7 @@ class CreatePlanSchema(BaseModel):
     @validator("end_date")
     def end_after_start(cls, v, values):
         if "start_date" in values and v < values["start_date"]:
-            raise ValueError("end_date must be >= start_date")
+            raise ValueError("end_date must be on or after start_date")  # Updated error message
         return v
 
 class AddExpenseSchema(BaseModel):

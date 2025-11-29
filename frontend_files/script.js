@@ -531,12 +531,23 @@ createPlanForm.addEventListener("submit", async (e) => {
             return;
         }
 
+        // Format dates as YYYY-MM-DD strings (this is what the backend expects for date objects)
+        const startDateStr = planStartDate.value; // Already in YYYY-MM-DD format
+        const endDateStr = planEndDate.value;     // Already in YYYY-MM-DD format
+
+        console.log("Sending plan data:", {
+            category_id: categoryId,
+            amount: amount,
+            start_date: startDateStr,
+            end_date: endDateStr
+        });
+
         // Create the budget plan
         const planData = {
             category_id: categoryId,
             amount: amount,
-            start_date: planStartDate.value,
-            end_date: planEndDate.value
+            start_date: startDateStr,  // Send as string in YYYY-MM-DD format
+            end_date: endDateStr       // Send as string in YYYY-MM-DD format
         };
 
         const planRes = await apiCall(`${API}/budget_plans/budget_plans`, {
@@ -545,8 +556,9 @@ createPlanForm.addEventListener("submit", async (e) => {
         });
 
         if (!planRes || !planRes.ok) {
-            const error = await planRes.json();
-            alert("Failed to create budget plan: " + (error.error || "Unknown error"));
+            const errorData = await planRes.json();
+            console.error("Backend error:", errorData);
+            alert("Failed to create budget plan: " + (errorData.error || errorData.message || "validation_error"));
             return;
         }
 
@@ -570,6 +582,7 @@ createPlanForm.addEventListener("submit", async (e) => {
         await loadHomeData(); // Refresh home section stats
         
     } catch (error) {
+        console.error("Error creating budget plan:", error);
         alert("Error creating budget plan: " + error.message);
     }
 });
@@ -876,3 +889,32 @@ document.addEventListener("DOMContentLoaded", () => {
         showPage(loginPage);
     }
 });
+
+
+// Add this helper function for debugging
+async function debugApiCall(url, options = {}) {
+    console.log("Making API call to:", url);
+    console.log("Request options:", options);
+    
+    try {
+        const response = await fetch(url, {
+            headers: getAuthHeaders(),
+            ...options
+        });
+        
+        console.log("Response status:", response.status);
+        const responseText = await response.text();
+        console.log("Response text:", responseText);
+        
+        // Try to parse as JSON, but keep text if it fails
+        try {
+            const jsonData = JSON.parse(responseText);
+            return { ok: response.ok, status: response.status, data: jsonData };
+        } catch (e) {
+            return { ok: response.ok, status: response.status, data: responseText };
+        }
+    } catch (error) {
+        console.error("API call failed:", error);
+        throw error;
+    }
+}

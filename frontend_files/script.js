@@ -571,3 +571,291 @@ document.addEventListener("DOMContentLoaded", () => {
         showPage(loginPage);
     }
 });
+
+/* --------------------------
+   CREATE PLAN EVENT LISTENERS
+--------------------------- */
+createNewCategoryCheckbox.addEventListener("change", function() {
+    if (this.checked) {
+        newCategoryGroup.classList.remove("hidden");
+        planCategory.disabled = true;
+        planCategory.required = false;
+        newCategoryName.required = true;
+    } else {
+        newCategoryGroup.classList.add("hidden");
+        planCategory.disabled = false;
+        planCategory.required = true;
+        newCategoryName.required = false;
+        newCategoryName.value = "";
+        newCategoryDesc.value = "";
+    }
+    updatePlanPreview();
+});
+
+// Real-time preview updates
+planCategory.addEventListener("change", updatePlanPreview);
+newCategoryName.addEventListener("input", updatePlanPreview);
+planAmountInput.addEventListener("input", updatePlanPreview);
+planStartDate.addEventListener("change", updatePlanPreview);
+planEndDate.addEventListener("change", updatePlanPreview);
+
+// Amount validation with min/max
+planAmountInput.addEventListener("blur", function() {
+    const value = parseFloat(this.value);
+    if (value < 1) {
+        alert("Minimum amount is ₣1");
+        this.value = "1";
+    } else if (value > 10000000) {
+        alert("Maximum amount is ₣10,000,000");
+        this.value = "10000000";
+    }
+    updatePlanPreview();
+});
+
+/* --------------------------
+   CREATE PLAN FORM SUBMISSION
+--------------------------- */
+createPlanForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    let categoryId;
+    let categoryName;
+
+    try {
+        // Handle category creation if needed
+        if (createNewCategoryCheckbox.checked) {
+            const newCategoryNameValue = newCategoryName.value.trim();
+            
+            if (!newCategoryNameValue) {
+                alert("Please enter a category name");
+                return;
+            }
+
+            // Check if category already exists for this user
+            const existingCategory = userCategories.find(
+                cat => cat.name.toLowerCase() === newCategoryNameValue.toLowerCase()
+            );
+
+            if (existingCategory) {
+                alert(`Category "${newCategoryNameValue}" already exists. Please select it from the dropdown instead.`);
+                // Auto-select the existing category
+                createNewCategoryCheckbox.checked = false;
+                newCategoryGroup.classList.add("hidden");
+                planCategory.disabled = false;
+                planCategory.value = existingCategory.category_id;
+                updatePlanPreview();
+                return;
+            }
+
+            // Create new category
+            const categoryRes = await apiCall(`${API}/categories/categories`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    name: newCategoryNameValue,
+                    description: newCategoryDesc.value.trim() || undefined
+                })
+            });
+
+            if (!categoryRes || !categoryRes.ok) {
+                const error = await categoryRes.json();
+                alert("Failed to create category: " + (error.error || "Unknown error"));
+                return;
+            }
+
+            const newCategory = await categoryRes.json();
+            categoryId = newCategory.category_id;
+            categoryName = newCategoryNameValue;
+            
+            // Reload categories to include the new one
+            await loadCategories();
+        } else {
+            categoryId = parseInt(planCategory.value);
+            if (!categoryId) {
+                alert("Please select a category");
+                return;
+            }
+            
+            const selectedCategory = userCategories.find(cat => cat.category_id === categoryId);
+            categoryName = selectedCategory ? selectedCategory.name : 'Unknown Category';
+        }
+
+        // Validate amount
+        const amount = parseFloat(planAmountInput.value);
+        if (amount < 1) {
+            alert("Minimum budget amount is ₣1");
+            return;
+        }
+        if (amount > 10000000) {
+            alert("Maximum budget amount is ₣10,000,000");
+            return;
+        }
+
+        // Validate dates
+        const startDate = new Date(planStartDate.value);
+        const endDate = new Date(planEndDate.value);
+        
+        if (endDate < startDate) {
+            alert("End date must be on or after start date");
+            return;
+        }
+
+        // Create the budget plan
+        const planData = {
+            category_id: categoryId,
+            amount: amount,
+            start_date: planStartDate.value,
+            end_date: planEndDate.value
+        };
+
+        const planRes = await apiCall(`${API}/budget_plans/budget_plans`, {
+            method: 'POST',
+            body: JSON.stringify(planData)
+        });
+
+        if (!planRes || !planRes.ok) {
+            const error = await planRes.json();
+            alert("Failed to create budget plan: " + (error.error || "Unknown error"));
+            return;
+        }
+
+        const result = await planRes.json();
+        
+        alert(`Budget plan for "${categoryName}" created successfully!`);
+        
+        // Reset form
+        createPlanForm.reset();
+        createNewCategoryCheckbox.checked = false;
+        newCategoryGroup.classList.add("hidden");
+        planCategory.disabled = false;
+        planPreview.classList.add("hidden");
+        
+        // Set default dates again
+        initializeCreatePlanFormDates();
+        
+        // Reload data
+        await loadBudgetPlans();
+        await loadExistingPlans();
+        await loadHomeData(); // Refresh home section stats
+        
+    } catch (error) {
+        alert("Error creating budget plan: " + error.message);
+    }
+});
+
+/* --------------------------
+   CREATE PLAN FUNCTIONS
+--------------------------- */
+function updatePlanPreview() {
+    const hasCategory = createNewCategoryCheckbox.checked ? 
+        newCategoryName.value.trim() : 
+        planCategory.selectedIndex > 0;
+    
+    const amount = parseFloat(planAmountInput.value) || 0;
+    const hasValidAmount = amount >= 1 && amount <= 10000000;
+    const hasStartDate = planStartDate.value;
+    const hasEndDate = planEndDate.value;
+
+    if (hasCategory && hasValidAmount && hasStartDate && hasEndDate) {
+        // Update preview content
+        previewCategory.textContent = createNewCategoryCheckbox.checked ? 
+            newCategoryName.value : 
+            planCategory.options[planCategory.selectedIndex].text;
+        
+        previewAmount.textContent = `₣${amount.toFixed(2)}`;
+        
+        // Calculate and display duration
+        const start = new Date(planStartDate.value);
+        const end = new Date(planEndDate.value);
+        const diffTime = Math.abs(end - start);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 to include both start and end days
+        previewDuration.textContent = `${diffDays} days`;
+        
+        planPreview.classList.remove("hidden");
+    } else {
+        planPreview.classList.add("hidden");
+    }
+}
+
+async function loadExistingPlans() {
+    try {
+        const res = await apiCall(`${API}/budget_plans/budget_plans`);
+        if (res && res.ok) {
+            const plans = await res.json();
+            displayExistingPlans(plans);
+        }
+    } catch (error) {
+        console.error('Failed to load existing plans:', error);
+    }
+}
+
+function displayExistingPlans(plans) {
+    if (plans.length === 0) {
+        existingPlansList.innerHTML = '<p class="empty-state">No budget plans created yet.</p>';
+        return;
+    }
+
+    const plansHTML = plans.map(plan => {
+        const category = userCategories.find(cat => cat.category_id === plan.category_id);
+        const categoryName = category ? category.name : 'Unknown Category';
+        const startDate = new Date(plan.start_date).toLocaleDateString();
+        const endDate = new Date(plan.end_date).toLocaleDateString();
+        const spent = parseFloat(plan.spent || 0);
+        const total = parseFloat(plan.amount);
+        const remaining = total - spent;
+        
+        return `
+            <div class="existing-plan-item">
+                <div class="plan-info">
+                    <h4>${categoryName}</h4>
+                    <div class="plan-details">
+                        ${startDate} - ${endDate}
+                    </div>
+                    <div class="plan-details">
+                        Spent: ₣${spent.toFixed(2)} | Remaining: ₣${remaining.toFixed(2)}
+                    </div>
+                </div>
+                <div class="plan-amount">₣${total.toFixed(2)}</div>
+            </div>
+        `;
+    }).join('');
+
+    existingPlansList.innerHTML = plansHTML;
+}
+
+function updatePlanCategoryDropdown() {
+    // Clear existing options except the first one
+    while (planCategory.options.length > 1) {
+        planCategory.remove(1);
+    }
+    
+    // Add categories from API
+    userCategories.forEach(category => {
+        const option = document.createElement('option');
+        option.value = category.category_id;
+        option.textContent = category.name;
+        planCategory.appendChild(option);
+    });
+}
+
+function initializeCreatePlanFormDates() {
+    // Set default dates to current month
+    const today = new Date();
+    const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    
+    planStartDate.value = firstDayOfMonth.toISOString().split('T')[0];
+    planEndDate.value = lastDayOfMonth.toISOString().split('T')[0];
+}
+
+function initializeCreatePlanForm() {
+    initializeCreatePlanFormDates();
+    
+    // Reset form state
+    createNewCategoryCheckbox.checked = false;
+    newCategoryGroup.classList.add("hidden");
+    planCategory.disabled = false;
+    planPreview.classList.add("hidden");
+    
+    // Load existing plans
+    loadExistingPlans();
+}

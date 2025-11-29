@@ -393,6 +393,207 @@ body.dark {
 }
 
 
+/* -------------------------------------------------------
+    CREATE PLAN SECTION STYLES
+-------------------------------------------------------- */
+.section-description {
+    color: var(--text);
+    opacity: 0.7;
+    margin-bottom: 25px;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+    color: var(--text);
+}
+
+.form-group input,
+.form-group select {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px rgba(75, 123, 236, 0.1);
+}
+
+.form-hint {
+    font-size: 12px;
+    color: var(--text);
+    opacity: 0.6;
+    margin-top: 5px;
+}
+
+/* Form Row for side-by-side inputs */
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+/* Checkbox Styles */
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    font-weight: normal;
+}
+
+.checkbox-label input[type="checkbox"] {
+    display: none;
+}
+
+.checkmark {
+    width: 18px;
+    height: 18px;
+    border: 2px solid var(--border);
+    border-radius: 4px;
+    margin-right: 10px;
+    position: relative;
+    transition: all 0.2s ease;
+}
+
+.checkbox-label input[type="checkbox"]:checked + .checkmark {
+    background: var(--primary);
+    border-color: var(--primary);
+}
+
+.checkbox-label input[type="checkbox"]:checked + .checkmark::after {
+    content: '✓';
+    position: absolute;
+    color: white;
+    font-size: 12px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+/* Plan Preview */
+.plan-preview {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 15px;
+    margin: 20px 0;
+}
+
+.plan-preview h4 {
+    margin-bottom: 10px;
+    color: var(--text);
+}
+
+.preview-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+.preview-item span:first-child {
+    font-weight: bold;
+    color: var(--text);
+    opacity: 0.8;
+}
+
+.preview-item span:last-child {
+    color: var(--text);
+}
+
+/* Submit Button */
+.submit-btn {
+    width: 100%;
+    padding: 14px;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.submit-btn:hover {
+    background: var(--secondary);
+}
+
+.submit-btn:disabled {
+    background: var(--border);
+    cursor: not-allowed;
+}
+
+/* Existing Plans List */
+.existing-plan-item {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.plan-info h4 {
+    margin-bottom: 5px;
+    color: var(--text);
+}
+
+.plan-details {
+    font-size: 12px;
+    color: var(--text);
+    opacity: 0.7;
+}
+
+.plan-amount {
+    font-weight: bold;
+    color: var(--primary);
+    font-size: 16px;
+}
+
+.empty-state {
+    text-align: center;
+    color: var(--text);
+    opacity: 0.5;
+    font-style: italic;
+    padding: 20px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 480px) {
+    .form-row {
+        grid-template-columns: 1fr;
+        gap: 0;
+    }
+    
+    .existing-plan-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    .plan-amount {
+        align-self: flex-end;
+    }
+}
+
+
 
 /* -------------------------------------------------------
     ADD EXPENSE FORM

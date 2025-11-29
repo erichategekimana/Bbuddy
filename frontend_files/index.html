@@ -144,12 +144,86 @@
 
 
         <!-- ======================= CREATE PLAN SECTION ======================= -->
-        <section id="create-plan-section" class="section hidden">
-            <h2>Create Budget Plan</h2>
-            <div class="card">
-                <p>Budget plan creation form will go here...</p>
+<section id="create-plan-section" class="section hidden">
+    <div class="card">
+        <h2>Create Budget Plan</h2>
+        <p class="section-description">Create a new budget plan for a specific category and time period.</p>
+        
+        <form id="create-plan-form">
+            <!-- Category Selection -->
+            <div class="form-group">
+                <label for="plan-category">Category *</label>
+                <select id="plan-category" required>
+                    <option value="">Select a category</option>
+                    <!-- Categories will be loaded dynamically -->
+                </select>
+                <div class="form-hint">Choose an existing category or create a new one below</div>
             </div>
-        </section>
+
+            <!-- New Category Input (shown when "Create New Category" is selected) -->
+            <div id="new-category-group" class="form-group hidden">
+                <label for="new-category-name">New Category Name *</label>
+                <input type="text" id="new-category-name" placeholder="Enter category name">
+                <label for="new-category-desc">Description (Optional)</label>
+                <input type="text" id="new-category-desc" placeholder="Enter category description">
+            </div>
+
+            <!-- Or Create New Category Option -->
+            <div class="form-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="create-new-category">
+                    <span class="checkmark"></span>
+                    Create new category
+                </label>
+            </div>
+
+            <!-- Budget Amount -->
+            <div class="form-group">
+                <label for="plan-amount">Budget Amount (₣) *</label>
+                <input type="number" id="plan-amount" placeholder="0.00" required step="0.01" min="0.01">
+            </div>
+
+            <!-- Date Range -->
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="plan-start-date">Start Date *</label>
+                    <input type="date" id="plan-start-date" required>
+                </div>
+                <div class="form-group">
+                    <label for="plan-end-date">End Date *</label>
+                    <input type="date" id="plan-end-date" required>
+                </div>
+            </div>
+
+            <!-- Plan Summary Preview -->
+            <div id="plan-preview" class="plan-preview hidden">
+                <h4>Plan Summary</h4>
+                <div class="preview-item">
+                    <span>Category:</span>
+                    <span id="preview-category">-</span>
+                </div>
+                <div class="preview-item">
+                    <span>Budget:</span>
+                    <span id="preview-amount">-</span>
+                </div>
+                <div class="preview-item">
+                    <span>Duration:</span>
+                    <span id="preview-duration">-</span>
+                </div>
+            </div>
+
+            <button type="submit" class="submit-btn">Create Budget Plan</button>
+        </form>
+    </div>
+
+    <!-- Existing Plans List -->
+    <div class="card">
+        <h3>Your Existing Plans</h3>
+        <div id="existing-plans-list">
+            <p class="empty-state">No budget plans created yet.</p>
+        </div>
+    </div>
+</section>
 
 
 

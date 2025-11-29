@@ -33,7 +33,7 @@ const regPassword = document.getElementById("reg-password");
 
 /* HOME PAGE ELEMENTS */
 const quoteElement = document.getElementById("quote");
-const planAmount = document.getElementById("plan-amount");
+const planAmount = document.getElementById("plan-amount-display");;
 const planRemaining = document.getElementById("plan-remaining");
 const progressFill = document.getElementById("progress-fill");
 const progressText = document.getElementById("progress-text");

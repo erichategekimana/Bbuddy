@@ -6,6 +6,7 @@ const registerPage = document.getElementById("register-page");
 const app = document.getElementById("app");
 const homeSection = document.getElementById("home-section");
 const dashboardSection = document.getElementById("dashboard-section");
+const createPlanSection = document.getElementById("create-plan-section");
 const addExpenseSection = document.getElementById("add-expense-section");
 
 /* NAV BUTTONS */
@@ -29,10 +30,15 @@ const regUsername = document.getElementById("reg-username");
 const regEmail = document.getElementById("reg-email");
 const regPassword = document.getElementById("reg-password");
 
-/* HOME PAGE */
+/* HOME PAGE ELEMENTS */
 const quoteElement = document.getElementById("quote");
 const planAmount = document.getElementById("plan-amount");
 const planRemaining = document.getElementById("plan-remaining");
+const progressFill = document.getElementById("progress-fill");
+const progressText = document.getElementById("progress-text");
+const totalPlansElement = document.getElementById("total-plans");
+const totalExpensesElement = document.getElementById("total-expenses");
+const totalCategoriesElement = document.getElementById("total-categories");
 
 /* ADD EXPENSE */
 const expenseCategory = document.getElementById("expense-category");
@@ -56,6 +62,7 @@ let authToken = localStorage.getItem("authToken") || null;
 let currentUser = null;
 let userCategories = [];
 let userBudgetPlans = [];
+let userExpenses = [];
 
 /* --------------------------
    API HELPER FUNCTIONS
@@ -105,10 +112,25 @@ function showPage(page) {
 }
 
 function showSection(section) {
+    // Hide all sections
     homeSection.classList.add("hidden");
     dashboardSection.classList.add("hidden");
+    createPlanSection.classList.add("hidden");
     addExpenseSection.classList.add("hidden");
+    
+    // Remove active class from all nav buttons
+    navButtons.forEach(btn => btn.classList.remove("active"));
+    
+    // Show the selected section
     section.classList.remove("hidden");
+    
+    // Add active class to corresponding nav button
+    const activeBtn = Array.from(navButtons).find(btn => 
+        btn.getAttribute("data-page") === section.id
+    );
+    if (activeBtn) {
+        activeBtn.classList.add("active");
+    }
 }
 
 /* --------------------------
@@ -130,16 +152,19 @@ navButtons.forEach(button => {
         switch(page) {
             case "home-section":
                 showSection(homeSection);
-                loadBudgetPlans();
+                loadHomeData();
                 break;
             case "dashboard-section":
                 showSection(dashboardSection);
                 loadExpenses();
                 break;
+            case "create-plan-section":
+                showSection(createPlanSection);
+                // Will implement later
+                break;
             case "add-expense-section":
                 showSection(addExpenseSection);
                 loadCategories();
-                loadBudgetPlans();
                 break;
         }
     });
@@ -176,9 +201,8 @@ loginForm.addEventListener("submit", async (e) => {
         showPage(app);
         showSection(homeSection);
 
-        // Load initial data
-        await loadBudgetPlans();
-        await loadCategories();
+        // Load all initial data for home section
+        await loadHomeData();
 
         alert("Logged in successfully!");
     } catch (err) {
@@ -221,6 +245,98 @@ registerForm.addEventListener("submit", async (e) => {
 });
 
 /* --------------------------
+   HOME SECTION DATA LOADING
+--------------------------- */
+async function loadHomeData() {
+    await Promise.all([
+        loadQuote(),
+        loadBudgetPlans(),
+        loadCategories(),
+        loadExpensesForStats()
+    ]);
+    updateHomeDisplay();
+}
+
+function updateHomeDisplay() {
+    updateBudgetPlanDisplay();
+    updateQuickStats();
+}
+
+/* --------------------------
+   BUDGET PLANS
+--------------------------- */
+async function loadBudgetPlans() {
+    try {
+        const res = await apiCall(`${API}/budget_plans/budget_plans`);
+        if (res && res.ok) {
+            userBudgetPlans = await res.json();
+        }
+    } catch (error) {
+        console.error('Failed to load budget plans:', error);
+    }
+}
+
+function updateBudgetPlanDisplay() {
+    if (userBudgetPlans.length > 0) {
+        const plan = userBudgetPlans[0]; // Show first plan for now
+        
+        // Update amounts
+        planAmount.textContent = `₣${parseFloat(plan.amount).toFixed(2)}`;
+        
+        const spent = parseFloat(plan.spent || 0);
+        const remaining = parseFloat(plan.amount) - spent;
+        planRemaining.textContent = `₣${remaining.toFixed(2)}`;
+        
+        // Update progress bar
+        const spentPercentage = (spent / parseFloat(plan.amount)) * 100;
+        progressFill.style.width = `${Math.min(spentPercentage, 100)}%`;
+        progressText.textContent = `${spentPercentage.toFixed(1)}% spent`;
+        
+        // Change progress bar color based on usage
+        if (spentPercentage > 80) {
+            progressFill.style.background = 'var(--danger)';
+        } else if (spentPercentage > 60) {
+            progressFill.style.background = 'var(--warning)';
+        } else {
+            progressFill.style.background = 'linear-gradient(90deg, var(--success), var(--primary))';
+        }
+    } else {
+        planAmount.textContent = "₣0.00";
+        planRemaining.textContent = "₣0.00";
+        progressFill.style.width = "0%";
+        progressText.textContent = "No budget plan";
+    }
+}
+
+/* --------------------------
+   QUICK STATS
+--------------------------- */
+function updateQuickStats() {
+    // Update plan count
+    totalPlansElement.textContent = userBudgetPlans.length;
+    
+    // Update expense count
+    totalExpensesElement.textContent = userExpenses.length;
+    
+    // Update category count
+    totalCategoriesElement.textContent = userCategories.length;
+}
+
+/* --------------------------
+   LOAD EXPENSES FOR STATS
+--------------------------- */
+async function loadExpensesForStats() {
+    try {
+        const res = await apiCall(`${API}/expenses/expenses`);
+        if (res && res.ok) {
+            userExpenses = await res.json();
+        }
+    } catch (error) {
+        console.error('Failed to load expenses:', error);
+    }
+}
+
+/* --------------------------
    LOAD CATEGORIES
 --------------------------- */
 async function loadCategories() {
@@ -229,31 +345,10 @@ async function loadCategories() {
         if (res && res.ok) {
             userCategories = await res.json();
             updateCategoryDropdown();
-        } else {
-            // If no categories exist, create default ones
-            await createDefaultCategories();
         }
     } catch (error) {
         console.error('Failed to load categories:', error);
     }
-}
-
-async function createDefaultCategories() {
-    const defaultCategories = ['Food', 'Transport', 'Bills', 'Shopping', 'Entertainment'];
-    
-    for (const categoryName of defaultCategories) {
-        try {
-            await apiCall(`${API}/categories/categories`, {
-                method: 'POST',
-                body: JSON.stringify({ name: categoryName })
-            });
-        } catch (error) {
-            console.error('Failed to create category:', categoryName, error);
-        }
-    }
-    
-    // Reload categories after creating defaults
-    await loadCategories();
 }
 
 function updateCategoryDropdown() {
@@ -278,68 +373,28 @@ function updateCategoryDropdown() {
 }
 
 /* --------------------------
-   LOAD BUDGET PLANS
+   QUOTES
 --------------------------- */
-async function loadBudgetPlans() {
+async function loadQuote() {
     try {
-        const res = await apiCall(`${API}/budget_plans/budget_plans`);
-        if (res && res.ok) {
-            userBudgetPlans = await res.json();
-            updateBudgetPlanDisplay();
+        const res = await fetch(`${API}/quotes/quote`);
+        if (res.ok) {
+            const data = await res.json();
+            quoteElement.textContent = `"${data.quote}"`;
+        } else {
+            // Fallback quotes
+            const fallbackQuotes = [
+                "Take control of your finances, one expense at a time.",
+                "The best time to start budgeting was yesterday. The second best time is now.",
+                "A budget is telling your money where to go instead of wondering where it went.",
+                "Financial freedom is available to those who learn about it and work for it."
+            ];
+            const randomQuote = fallbackQuotes[Math.floor(Math.random() * fallbackQuotes.length)];
+            quoteElement.textContent = `"${randomQuote}"`;
         }
     } catch (error) {
-        console.error('Failed to load budget plans:', error);
+        quoteElement.textContent = '"Take control of your finances, one expense at a time."';
     }
-}
-
-function updateBudgetPlanDisplay() {
-    if (userBudgetPlans.length > 0) {
-        const plan = userBudgetPlans[0]; // Show first plan for now
-        planAmount.textContent = `₣${plan.amount}`;
-        
-        // Calculate remaining
-        const remaining = plan.amount - (plan.spent || 0);
-        planRemaining.textContent = `₣${remaining.toFixed(2)}`;
-    } else {
-        planAmount.textContent = "No budget plan";
-        planRemaining.textContent = "Create a budget plan first";
-    }
-}
-
-/* --------------------------
-   LOAD EXPENSES FOR DASHBOARD
---------------------------- */
-async function loadExpenses() {
-    try {
-        const res = await apiCall(`${API}/expenses/expenses`);
-        if (res && res.ok) {
-            const expenses = await res.json();
-            updateExpensesTable(expenses);
-        }
-    } catch (error) {
-        console.error('Failed to load expenses:', error);
-    }
-}
-
-function updateExpensesTable(expenses) {
-    const tbody = document.querySelector('#expense-table tbody');
-    tbody.innerHTML = '';
-    
-    expenses.forEach(expense => {
-        const row = document.createElement('tr');
-        
-        // Find category name
-        const category = userCategories.find(cat => cat.category_id === expense.category_id);
-        const categoryName = category ? category.name : 'Unknown';
-        
-        row.innerHTML = `
-            <td>${categoryName}</td>
-            <td>₣${expense.amount}</td>
-            <td>${new Date(expense.expense_date).toLocaleDateString()}</td>
-        `;
-        
-        tbody.appendChild(row);
-    });
 }
 
 /* --------------------------
@@ -405,7 +460,7 @@ expenseForm.addEventListener("submit", async (e) => {
     }
 
     const body = {
-        plan_id: userBudgetPlans[0].plan_id, // Use first plan for now
+        plan_id: userBudgetPlans[0].plan_id,
         category_id: categoryId,
         amount: parseFloat(expenseAmount.value),
         description: `Expense for ${categoryName}`
@@ -418,16 +473,12 @@ expenseForm.addEventListener("submit", async (e) => {
         });
 
         if (res && res.ok) {
-            const result = await res.json();
             alert(`Expense added successfully!`);
             expenseForm.reset();
             otherCategoryInput.classList.add("hidden");
             
-            // Reload data to reflect changes
-            await loadBudgetPlans();
-            if (dashboardSection.classList.contains('hidden') === false) {
-                await loadExpenses();
-            }
+            // Reload all data to reflect changes
+            await loadHomeData();
         } else {
             const error = await res.json();
             alert("Failed to add expense: " + (error.message || "Unknown error"));
@@ -436,6 +487,42 @@ expenseForm.addEventListener("submit", async (e) => {
         alert("Error adding expense: " + error.message);
     }
 });
+
+/* --------------------------
+   LOAD EXPENSES FOR DASHBOARD
+--------------------------- */
+async function loadExpenses() {
+    try {
+        const res = await apiCall(`${API}/expenses/expenses`);
+        if (res && res.ok) {
+            const expenses = await res.json();
+            updateExpensesTable(expenses);
+        }
+    } catch (error) {
+        console.error('Failed to load expenses:', error);
+    }
+}
+
+function updateExpensesTable(expenses) {
+    const tbody = document.querySelector('#expense-table tbody');
+    tbody.innerHTML = '';
+    
+    expenses.forEach(expense => {
+        const row = document.createElement('tr');
+        
+        // Find category name
+        const category = userCategories.find(cat => cat.category_id === expense.category_id);
+        const categoryName = category ? category.name : 'Unknown';
+        
+        row.innerHTML = `
+            <td>${categoryName}</td>
+            <td>₣${expense.amount}</td>
+            <td>${new Date(expense.expense_date).toLocaleDateString()}</td>
+        `;
+        
+        tbody.appendChild(row);
+    });
+}
 
 /* --------------------------
    SETTINGS PANEL
@@ -454,27 +541,12 @@ closeSettings.addEventListener("click", () => {
 themeSwitcher.addEventListener("change", (e) => {
     if (e.target.value === "dark") {
         document.body.classList.add("dark");
+        localStorage.setItem('theme', 'dark');
     } else {
         document.body.classList.remove("dark");
+        localStorage.setItem('theme', 'light');
     }
 });
-
-/* --------------------------
-   QUOTES
---------------------------- */
-async function loadQuote() {
-    try {
-        const res = await fetch(`${API}/quotes/quote`);
-        if (res.ok) {
-            const data = await res.json();
-            quoteElement.textContent = `"${data.quote}"`;
-        } else {
-            quoteElement.textContent = '"Take control of your finances, one expense at a time."';
-        }
-    } catch (error) {
-        quoteElement.textContent = '"The best time to start budgeting was yesterday. The second best time is now."';
-    }
-}
 
 /* --------------------------
    PAGE LOAD
@@ -484,14 +556,17 @@ document.addEventListener("DOMContentLoaded", () => {
     const today = new Date();
     expenseDate.value = today.toISOString().split('T')[0];
     
+    // Load saved theme
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    themeSwitcher.value = savedTheme;
+    if (savedTheme === 'dark') {
+        document.body.classList.add('dark');
+    }
+    
     if (authToken) {
         showPage(app);
         showSection(homeSection);
-        loadQuote();
-        
-        // Load initial data
-        loadBudgetPlans();
-        loadCategories();
+        loadHomeData();
     } else {
         showPage(loginPage);
     }

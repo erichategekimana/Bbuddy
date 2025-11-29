@@ -20,7 +20,12 @@ body {
     --card: #ffffff;
     --text: #222;
     --primary: #4b7bec;
+    --secondary: #3867d6;
+    --success: #20bf6b;
+    --warning: #fa8231;
+    --danger: #eb3b5a;
     --border: #dcdcdc;
+    --shadow: rgba(0,0,0,0.1);
 }
 
 /* Dark Theme */
@@ -29,7 +34,12 @@ body.dark {
     --card: #1b1b1b;
     --text: #eaeaea;
     --primary: #4b7bec;
+    --secondary: #3867d6;
+    --success: #20bf6b;
+    --warning: #fa8231;
+    --danger: #eb3b5a;
     --border: #333;
+    --shadow: rgba(0,0,0,0.3);
 }
 
 /* Utility classes */
@@ -56,7 +66,7 @@ body.dark {
     width: 90%;
     max-width: 380px;
     border-radius: 8px;
-    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    box-shadow: 0 0 10px var(--shadow);
 }
 
 .auth-container h1 {
@@ -115,6 +125,7 @@ body.dark {
 -------------------------------------------------------- */
 #app {
     padding-top: 60px; /* top bar spacing */
+    padding-bottom: 70px; /* navbar spacing */
 }
 
 /* TOP BAR */
@@ -129,26 +140,27 @@ body.dark {
     align-items: center;
     border-bottom: 1px solid var(--border);
     z-index: 20;
+    box-shadow: 0 2px 4px var(--shadow);
 }
 
 #topbar h2 {
     font-size: 22px;
+    color: var(--primary);
+    font-weight: bold;
 }
 
-/* Profile pic */
-#profile-pic-container {
-    width: 38px;
-    height: 38px;
-    border-radius: 50%;
-    overflow: hidden;
+#settings-btn {
+    background: var(--primary);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
     cursor: pointer;
-    border: 2px solid var(--primary);
+    font-size: 14px;
 }
 
-#profile-pic {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+#settings-btn:hover {
+    background: var(--secondary);
 }
 
 
@@ -166,20 +178,37 @@ body.dark {
     justify-content: space-around;
     border-top: 1px solid var(--border);
     z-index: 10;
+    box-shadow: 0 -2px 4px var(--shadow);
 }
 
 .nav-btn {
-    padding: 10px 20px;
+    padding: 10px 15px;
     background: none;
     border: none;
     color: var(--text);
-    font-size: 15px;
+    font-size: 12px;
     cursor: pointer;
     transition: 0.2s;
+    border-radius: 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
 }
 
 .nav-btn:hover {
     color: var(--primary);
+    background: var(--bg);
+}
+
+.nav-btn.active {
+    color: var(--primary);
+    background: var(--bg);
+    font-weight: bold;
+}
+
+.nav-btn i {
+    font-size: 16px;
 }
 
 
@@ -189,16 +218,158 @@ body.dark {
 -------------------------------------------------------- */
 .section {
     padding: 20px;
-    padding-bottom: 100px; /* space for navbar */
+    padding-bottom: 20px;
 }
 
 .card {
     background: var(--card);
     padding: 20px;
     margin-bottom: 20px;
-    border-radius: 10px;
+    border-radius: 12px;
     border: 1px solid var(--border);
-    box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+    box-shadow: 0 2px 8px var(--shadow);
+}
+
+.card h3 {
+    margin-bottom: 15px;
+    color: var(--text);
+    font-size: 18px;
+}
+
+
+
+/* -------------------------------------------------------
+    HOME SECTION SPECIFIC STYLES
+-------------------------------------------------------- */
+.welcome-card {
+    text-align: center;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    color: white;
+    border: none;
+}
+
+.welcome-card h3 {
+    color: white;
+    font-size: 20px;
+    margin-bottom: 10px;
+}
+
+.welcome-card p {
+    font-size: 14px;
+    opacity: 0.9;
+    line-height: 1.4;
+}
+
+/* Budget Card Styles */
+.budget-card h3 {
+    color: var(--text);
+    margin-bottom: 20px;
+}
+
+.budget-stats {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    gap: 15px;
+}
+
+.stat-item {
+    flex: 1;
+    text-align: center;
+    padding: 15px;
+    background: var(--bg);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+}
+
+.stat-label {
+    display: block;
+    font-size: 12px;
+    color: var(--text);
+    opacity: 0.7;
+    margin-bottom: 5px;
+    text-transform: uppercase;
+    font-weight: bold;
+}
+
+.stat-amount {
+    display: block;
+    font-size: 20px;
+    font-weight: bold;
+    color: var(--text);
+}
+
+.stat-amount.remaining {
+    color: var(--success);
+}
+
+/* Progress Bar */
+.progress-container {
+    margin-top: 15px;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 8px;
+    background: var(--bg);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 8px;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--success), var(--primary));
+    border-radius: 4px;
+    transition: width 0.3s ease;
+    width: 0%;
+}
+
+.progress-text {
+    text-align: center;
+    font-size: 12px;
+    color: var(--text);
+    opacity: 0.7;
+}
+
+/* Quick Stats Card */
+.quick-stats-card h3 {
+    margin-bottom: 20px;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+}
+
+.stat-box {
+    text-align: center;
+    padding: 15px 10px;
+    background: var(--bg);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    transition: transform 0.2s ease;
+}
+
+.stat-box:hover {
+    transform: translateY(-2px);
+}
+
+.stat-number {
+    display: block;
+    font-size: 24px;
+    font-weight: bold;
+    color: var(--primary);
+    margin-bottom: 5px;
+}
+
+.stat-desc {
+    font-size: 11px;
+    color: var(--text);
+    opacity: 0.7;
+    text-transform: uppercase;
+    font-weight: bold;
 }
 
 
@@ -298,15 +469,21 @@ body.dark {
     RESPONSIVE DESIGN
 -------------------------------------------------------- */
 @media (min-width: 768px) {
-    #navbar {
-        position: fixed;
-        left: 0;
-        bottom: 0;
-        width: 100%;
-    }
-
-    .card {
+    .section {
         max-width: 600px;
-        margin: 0 auto 20px auto;
+        margin: 0 auto;
+    }
+    
+    .budget-stats {
+        gap: 20px;
+    }
+    
+    .stats-grid {
+        gap: 15px;
+    }
+    
+    .nav-btn {
+        font-size: 14px;
+        padding: 12px 20px;
     }
 }

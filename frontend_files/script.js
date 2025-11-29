@@ -511,8 +511,19 @@ createPlanForm.addEventListener("submit", async (e) => {
             categoryName = selectedCategory ? selectedCategory.name : 'Unknown Category';
         }
 
-        // Validate amount
-        const amount = parseFloat(planAmountInput.value);
+      // FIX: Better amount validation and parsing
+        const amountValue = planAmountInput.value.trim();
+        if (!amountValue) {
+            alert("Please enter a budget amount");
+            return;
+        }
+
+        const amount = parseFloat(amountValue);
+        if (isNaN(amount)) {
+            alert("Please enter a valid budget amount");
+            return;
+        }
+
         if (amount < 1) {
             alert("Minimum budget amount is ₣1");
             return;

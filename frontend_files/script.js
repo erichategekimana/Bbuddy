@@ -479,7 +479,7 @@ createPlanForm.addEventListener("submit", async (e) => {
                 return;
             }
 
-            // Create new category
+            // Create new category USING apiCall (this sends the token)
             const categoryRes = await apiCall(`${API}/categories/categories`, {
                 method: 'POST',
                 body: JSON.stringify({
@@ -531,26 +531,17 @@ createPlanForm.addEventListener("submit", async (e) => {
             return;
         }
 
-        // Format dates as YYYY-MM-DD strings (this is what the backend expects for date objects)
-        const startDateStr = planStartDate.value; // Already in YYYY-MM-DD format
-        const endDateStr = planEndDate.value;     // Already in YYYY-MM-DD format
-
-        console.log("Sending plan data:", {
-            category_id: categoryId,
-            amount: amount,
-            start_date: startDateStr,
-            end_date: endDateStr
-        });
-
-        // Create the budget plan
+        // Create the budget plan USING apiCall (this was missing!)
         const planData = {
             category_id: categoryId,
             amount: amount,
-            start_date: startDateStr,  // Send as string in YYYY-MM-DD format
-            end_date: endDateStr       // Send as string in YYYY-MM-DD format
+            start_date: planStartDate.value,
+            end_date: planEndDate.value
         };
 
-        const planRes = await apiCall(`${API}/budget_plans/budget_plans`, {
+        console.log("Creating budget plan with data:", planData);
+
+        const planRes = await apiCall(`${API}/budget_plans/budget_plans`, {  // FIXED: Using apiCall instead of fetch
             method: 'POST',
             body: JSON.stringify(planData)
         });

@@ -13,14 +13,20 @@ class LoginSchema(BaseModel):
 
 class CreatePlanSchema(BaseModel):
     category_id: int
-    amount: condecimal(gt=0)
+    amount: float  # ← Receives JavaScript numbers properly
     start_date: date
     end_date: date
+
+    @validator("amount")
+    def validate_amount(cls, v):
+        if v <= 0:
+            raise ValueError("amount must be greater than 0")
+        return v
 
     @validator("end_date")
     def end_after_start(cls, v, values):
         if "start_date" in values and v < values["start_date"]:
-            raise ValueError("end_date must be on or after start_date")  # Updated error message
+            raise ValueError("end_date must be on or after start_date")
         return v
 
 class AddExpenseSchema(BaseModel):

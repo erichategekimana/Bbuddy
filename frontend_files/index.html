@@ -58,7 +58,11 @@
         <!-- TOP BAR -->
         <header id="topbar">
             <h2>Bbuddy</h2>
-            <button id="settings-btn">Settings</button>
+            <div class="topbar-right">
+                <!-- Profile Picture -->
+                <img id="profile-pic" src="" alt="Profile" class="profile-picture hidden">
+                <button id="settings-btn">Settings</button>
+            </div>
         </header>
 
         <!-- NAVIGATION -->
@@ -179,7 +183,7 @@
 
             <!-- Budget Amount -->
             <div class="form-group">
-                <label for="plan-amount">Budget Amount (₣) *</label>
+                <label for="plan-amount">Budget Amount *</label>
                 <input type="number" id="plan-amount" placeholder="0.00" required step="0.01" min="1" max="10000000">
             </div>
 
@@ -254,21 +258,41 @@
         <!-- ======================= SETTINGS PANEL ======================= -->
         <div id="settings-panel" class="hidden">
             <div class="settings-content">
-                <h3>Settings</h3>
+                <h3>Account Settings</h3>
 
-                <label>Change Name</label>
-                <input type="text" id="settings-name" placeholder="Your name">
+                <!-- Profile Picture URL -->
+                <div class="form-group">
+                    <label for="profile-pic-url">Profile Picture URL</label>
+                    <input type="text" id="profile-pic-url" placeholder="Enter image URL">
+                    <button id="update-picture-btn" class="form-button">Update Picture</button>
+                </div>
 
-                <label>Change Profile Picture</label>
-                <input type="file" id="settings-pic">
+                <!-- Change Username -->
+                <div class="form-group">
+                    <label for="settings-name">Username</label>
+                    <input type="text" id="settings-name" placeholder="Your username">
+                </div>
 
-                <label>Theme</label>
-                <select id="theme-switcher">
-                    <option value="light">Light Mode</option>
-                    <option value="dark">Dark Mode</option>
-                </select>
+                <!-- Currency Selection -->
+                <div class="form-group">
+                    <label for="currency-select">Currency</label>
+                    <select id="currency-select">
+                        <option value="RWF">RWF - Rwandan Franc</option>
+                        <option value="USD">USD - US Dollar</option>
+                        <option value="EUR">EUR - Euro</option>
+                        <option value="CNY">CNY - Chinese Yuan</option>
+                    </select>
+                </div>
 
-                <button id="close-settings">Close</button>
+                <!-- Change Password -->
+                <div class="form-group">
+                    <label>Change Password</label>
+                    <input type="password" id="old-password" placeholder="Current password" style="margin-bottom: 8px;">
+                    <input type="password" id="new-password" placeholder="New password" style="margin-bottom: 8px;">
+                    <button id="change-password-btn" class="form-button">Change Password</button>
+                </div>
+
+                <button id="close-settings" class="submit-btn">Close Settings</button>
             </div>
         </div>
 

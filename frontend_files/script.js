@@ -33,7 +33,7 @@ const regPassword = document.getElementById("reg-password");
 
 /* HOME PAGE ELEMENTS */
 const quoteElement = document.getElementById("quote");
-const planAmount = document.getElementById("plan-amount-display");;
+const planAmount = document.getElementById("plan-amount-display");
 const planRemaining = document.getElementById("plan-remaining");
 const progressFill = document.getElementById("progress-fill");
 const progressText = document.getElementById("progress-text");
@@ -67,18 +67,30 @@ const settingsPanel = document.getElementById("settings-panel");
 const settingsBtn = document.getElementById("settings-btn");
 const closeSettings = document.getElementById("close-settings");
 const settingsName = document.getElementById("settings-name");
-const settingsPic = document.getElementById("settings-pic");
-const themeSwitcher = document.getElementById("theme-switcher");
+const profilePicUrl = document.getElementById("profile-pic-url");
+const updatePictureBtn = document.getElementById("update-picture-btn");
+const currencySelect = document.getElementById("currency-select");
+const oldPassword = document.getElementById("old-password");
+const newPassword = document.getElementById("new-password");
+const changePasswordBtn = document.getElementById("change-password-btn");
+const profilePic = document.getElementById("profile-pic");
 
 /* BACKEND API BASE URL */
 const API = "/api";
 
 /* AUTH TOKEN */
 let authToken = localStorage.getItem("authToken") || null;
-let currentUser = null;
-let userCategories = [];
-let userBudgetPlans = [];
-let userExpenses = [];
+
+/* --------------------------
+   GLOBAL DATA MANAGEMENT
+--------------------------- */
+let userData = {
+    profile: null,
+    categories: [],
+    budgetPlans: [],
+    expenses: [],
+    currency: 'RWF' // Default currency
+};
 
 /* --------------------------
    API HELPER FUNCTIONS
@@ -86,18 +98,18 @@ let userExpenses = [];
 function getAuthHeaders() {
     return {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${authToken}`  // FIXED: Use backticks ` not quotes "
+        "Authorization": `Bearer ${authToken}`
     };
 }
 
-async function apiCall(url, options = {}) {  // FIXED: Added closing parenthesis and bracket
+async function apiCall(url, options = {}) {
     try {
-        const response = await fetch(url, {  // FIXED: Removed invalid characters
+        const response = await fetch(url, {
             headers: getAuthHeaders(),
             ...options
         });
         
-        if (response.status === 401) {  // FIXED: Use === instead of ==
+        if (response.status === 401) {
             logout();
             return null;
         }
@@ -112,9 +124,23 @@ async function apiCall(url, options = {}) {  // FIXED: Added closing parenthesis
 function logout() {
     localStorage.removeItem("authToken");
     authToken = null;
-    currentUser = null;
+    userData = { profile: null, categories: [], budgetPlans: [], expenses: [], currency: 'RWF' };
     showPage(loginPage);
     alert("Session expired. Please login again.");
+}
+
+/* --------------------------
+   CURRENCY FORMATTING
+--------------------------- */
+function formatCurrency(amount) {
+    const symbols = {
+        'RWF': '₣',
+        'USD': '$',
+        'EUR': '€',
+        'CNY': '¥'
+    };
+    const symbol = symbols[userData.currency] || '₣';
+    return `${symbol}${parseFloat(amount).toFixed(2)}`;
 }
 
 /* --------------------------
@@ -150,7 +176,7 @@ function showSection(section) {
 }
 
 /* --------------------------
-   NAVIGATION HANDLERS
+   NAVIGATION HANDLERS - NO MORE RELOADS
 --------------------------- */
 showRegisterLink.addEventListener("click", (e) => {
     e.preventDefault();
@@ -168,23 +194,205 @@ navButtons.forEach(button => {
         switch(page) {
             case "home-section":
                 showSection(homeSection);
-                loadHomeData();
+                // No reload - data is already loaded
                 break;
             case "dashboard-section":
                 showSection(dashboardSection);
-                loadExpenses();
+                // Just update the table with existing data
+                updateExpensesTable(userData.expenses);
                 break;
             case "create-plan-section":
                 showSection(createPlanSection);
                 initializeCreatePlanForm();
+                // Load existing plans (this is specific to this section)
+                loadExistingPlans();
                 break;
             case "add-expense-section":
                 showSection(addExpenseSection);
-                loadCategories();
+                // Categories are already loaded globally
                 break;
         }
     });
 });
+
+/* --------------------------
+   LOAD ALL USER DATA ONCE
+--------------------------- */
+async function loadAllUserData() {
+    try {
+        await Promise.all([
+            loadUserProfile(),
+            loadBudgetPlans(),
+            loadCategories(),
+            loadExpensesForStats()
+        ]);
+        updateAllDisplays();
+    } catch (error) {
+        console.error('Failed to load user data:', error);
+    }
+}
+
+async function loadUserProfile() {
+    try {
+        const res = await apiCall(`${API}/auth/profile`);
+        if (res && res.ok) {
+            userData.profile = await res.json();
+            userData.currency = userData.profile.currency || 'RWF';
+            updateProfileDisplay();
+        }
+    } catch (error) {
+        console.error('Failed to load user profile:', error);
+    }
+}
+
+async function loadBudgetPlans() {
+    try {
+        const res = await apiCall(`${API}/budget_plans/budget_plans`);
+        if (res && res.ok) {
+            userData.budgetPlans = await res.json();
+        }
+    } catch (error) {
+        console.error('Failed to load budget plans:', error);
+    }
+}
+
+async function loadCategories() {
+    try {
+        const res = await apiCall(`${API}/categories/categories`);
+        if (res && res.ok) {
+            userData.categories = await res.json();
+            updateCategoryDropdowns();
+        }
+    } catch (error) {
+        console.error('Failed to load categories:', error);
+    }
+}
+
+async function loadExpensesForStats() {
+    try {
+        const res = await apiCall(`${API}/expenses/expenses`);
+        if (res && res.ok) {
+            userData.expenses = await res.json();
+        }
+    } catch (error) {
+        console.error('Failed to load expenses:', error);
+    }
+}
+
+function updateAllDisplays() {
+    updateBudgetPlanDisplay();
+    updateQuickStats();
+    updateExpensesTable(userData.expenses);
+}
+
+/* --------------------------
+   UPDATE DISPLAY FUNCTIONS
+--------------------------- */
+function updateBudgetPlanDisplay() {
+    if (userData.budgetPlans.length > 0) {
+        const plan = userData.budgetPlans[0]; // Show first plan for now
+        
+        // Update amounts with currency formatting
+        planAmount.textContent = formatCurrency(plan.amount);
+        
+        const spent = parseFloat(plan.spent || 0);
+        const remaining = parseFloat(plan.amount) - spent;
+        planRemaining.textContent = formatCurrency(remaining);
+        
+        // Update progress bar
+        const spentPercentage = (spent / parseFloat(plan.amount)) * 100;
+        progressFill.style.width = `${Math.min(spentPercentage, 100)}%`;
+        progressText.textContent = `${spentPercentage.toFixed(1)}% spent`;
+        
+        // Change progress bar color based on usage
+        if (spentPercentage > 80) {
+            progressFill.style.background = 'var(--danger)';
+        } else if (spentPercentage > 60) {
+            progressFill.style.background = 'var(--warning)';
+        } else {
+            progressFill.style.background = 'linear-gradient(90deg, var(--success), var(--primary))';
+        }
+    } else {
+        planAmount.textContent = formatCurrency(0);
+        planRemaining.textContent = formatCurrency(0);
+        progressFill.style.width = "0%";
+        progressText.textContent = "No budget plan";
+    }
+}
+
+function updateQuickStats() {
+    // Update plan count
+    totalPlansElement.textContent = userData.budgetPlans.length;
+    
+    // Update expense count
+    totalExpensesElement.textContent = userData.expenses.length;
+    
+    // Update category count
+    totalCategoriesElement.textContent = userData.categories.length;
+}
+
+function updateProfileDisplay() {
+    if (userData.profile) {
+        // Update settings form
+        settingsName.value = userData.profile.username || '';
+        profilePicUrl.value = userData.profile.profile_picture_url || '';
+        
+        // Update currency selector
+        currencySelect.value = userData.currency;
+        
+        // Update profile picture in topbar
+        if (userData.profile.profile_picture_url) {
+            profilePic.src = userData.profile.profile_picture_url;
+            profilePic.classList.remove("hidden");
+        } else {
+            profilePic.classList.add("hidden");
+        }
+    }
+}
+
+/* --------------------------
+   CATEGORY DROPDOWNS
+--------------------------- */
+function updateCategoryDropdowns() {
+    updateExpenseCategoryDropdown();
+    updatePlanCategoryDropdown();
+}
+
+function updateExpenseCategoryDropdown() {
+    // Clear existing options except the first one
+    while (expenseCategory.options.length > 1) {
+        expenseCategory.remove(1);
+    }
+    
+    // Add categories from API
+    userData.categories.forEach(category => {
+        const option = document.createElement('option');
+        option.value = category.category_id;
+        option.textContent = category.name;
+        expenseCategory.appendChild(option);
+    });
+    
+    // Add "Other" option
+    const otherOption = document.createElement('option');
+    otherOption.value = "other";
+    otherOption.textContent = "Other";
+    expenseCategory.appendChild(otherOption);
+}
+
+function updatePlanCategoryDropdown() {
+    // Clear existing options except the first one
+    while (planCategory.options.length > 1) {
+        planCategory.remove(1);
+    }
+    
+    // Add categories from API
+    userData.categories.forEach(category => {
+        const option = document.createElement('option');
+        option.value = category.category_id;
+        option.textContent = category.name;
+        planCategory.appendChild(option);
+    });
+}
 
 /* --------------------------
    LOGIN
@@ -217,8 +425,8 @@ loginForm.addEventListener("submit", async (e) => {
         showPage(app);
         showSection(homeSection);
 
-        // Load all initial data for home section
-        await loadHomeData();
+        // Load all data once after login
+        await loadAllUserData();
 
         alert("Logged in successfully!");
     } catch (err) {
@@ -261,150 +469,6 @@ registerForm.addEventListener("submit", async (e) => {
 });
 
 /* --------------------------
-   HOME SECTION DATA LOADING
---------------------------- */
-async function loadHomeData() {
-    await Promise.all([
-        loadQuote(),
-        loadBudgetPlans(),
-        loadCategories(),
-        loadExpensesForStats()
-    ]);
-    updateHomeDisplay();
-}
-
-function updateHomeDisplay() {
-    updateBudgetPlanDisplay();
-    updateQuickStats();
-}
-
-/* --------------------------
-   BUDGET PLANS
---------------------------- */
-async function loadBudgetPlans() {
-    try {
-        const res = await apiCall(`${API}/budget_plans/budget_plans`);
-        if (res && res.ok) {
-            userBudgetPlans = await res.json();
-        }
-    } catch (error) {
-        console.error('Failed to load budget plans:', error);
-    }
-}
-
-function updateBudgetPlanDisplay() {
-    if (userBudgetPlans.length > 0) {
-        const plan = userBudgetPlans[0]; // Show first plan for now
-        
-        // Update amounts
-        planAmount.textContent = `₣${parseFloat(plan.amount).toFixed(2)}`;
-        
-        const spent = parseFloat(plan.spent || 0);
-        const remaining = parseFloat(plan.amount) - spent;
-        planRemaining.textContent = `₣${remaining.toFixed(2)}`;
-        
-        // Update progress bar
-        const spentPercentage = (spent / parseFloat(plan.amount)) * 100;
-        progressFill.style.width = `${Math.min(spentPercentage, 100)}%`;
-        progressText.textContent = `${spentPercentage.toFixed(1)}% spent`;
-        
-        // Change progress bar color based on usage
-        if (spentPercentage > 80) {
-            progressFill.style.background = 'var(--danger)';
-        } else if (spentPercentage > 60) {
-            progressFill.style.background = 'var(--warning)';
-        } else {
-            progressFill.style.background = 'linear-gradient(90deg, var(--success), var(--primary))';
-        }
-    } else {
-        planAmount.textContent = "₣0.00";
-        planRemaining.textContent = "₣0.00";
-        progressFill.style.width = "0%";
-        progressText.textContent = "No budget plan";
-    }
-}
-
-/* --------------------------
-   QUICK STATS
---------------------------- */
-function updateQuickStats() {
-    // Update plan count
-    totalPlansElement.textContent = userBudgetPlans.length;
-    
-    // Update expense count
-    totalExpensesElement.textContent = userExpenses.length;
-    
-    // Update category count
-    totalCategoriesElement.textContent = userCategories.length;
-}
-
-/* --------------------------
-   LOAD EXPENSES FOR STATS
---------------------------- */
-async function loadExpensesForStats() {
-    try {
-        const res = await apiCall(`${API}/expenses/expenses`);
-        if (res && res.ok) {
-            userExpenses = await res.json();
-        }
-    } catch (error) {
-        console.error('Failed to load expenses:', error);
-    }
-}
-
-/* --------------------------
-   LOAD CATEGORIES
---------------------------- */
-async function loadCategories() {
-    try {
-        const res = await apiCall(`${API}/categories/categories`);
-        if (res && res.ok) {
-            userCategories = await res.json();
-            updateCategoryDropdown(); // For expense form
-            updatePlanCategoryDropdown(); // For create plan form
-        }
-    } catch (error) {
-        console.error('Failed to load categories:', error);
-    }
-}
-
-function updateCategoryDropdown() {
-    // Clear existing options except the first one
-    while (expenseCategory.options.length > 1) {
-        expenseCategory.remove(1);
-    }
-    
-    // Add categories from API
-    userCategories.forEach(category => {
-        const option = document.createElement('option');
-        option.value = category.category_id;
-        option.textContent = category.name;
-        expenseCategory.appendChild(option);
-    });
-    
-    // Add "Other" option
-    const otherOption = document.createElement('option');
-    otherOption.value = "other";
-    otherOption.textContent = "Other";
-    expenseCategory.appendChild(otherOption);
-}
-
-function updatePlanCategoryDropdown() {
-    // Clear existing options except the first one
-    while (planCategory.options.length > 1) {
-        planCategory.remove(1);
-    }
-    
-    // Add categories from API
-    userCategories.forEach(category => {
-        const option = document.createElement('option');
-        option.value = category.category_id;
-        option.textContent = category.name;
-        planCategory.appendChild(option);
-    });
-}
-
-/* --------------------------
    CREATE PLAN EVENT LISTENERS
 --------------------------- */
 createNewCategoryCheckbox.addEventListener("change", function() {
@@ -435,10 +499,10 @@ planEndDate.addEventListener("change", updatePlanPreview);
 planAmountInput.addEventListener("blur", function() {
     const value = parseFloat(this.value);
     if (value < 1) {
-        alert("Minimum amount is ₣1");
+        alert("Minimum amount is " + formatCurrency(1));
         this.value = "1";
     } else if (value > 10000000) {
-        alert("Maximum amount is ₣10,000,000");
+        alert("Maximum amount is " + formatCurrency(10000000));
         this.value = "10000000";
     }
     updatePlanPreview();
@@ -464,7 +528,7 @@ createPlanForm.addEventListener("submit", async (e) => {
             }
 
             // Check if category already exists for this user
-            const existingCategory = userCategories.find(
+            const existingCategory = userData.categories.find(
                 cat => cat.name.toLowerCase() === newCategoryNameValue.toLowerCase()
             );
 
@@ -507,11 +571,11 @@ createPlanForm.addEventListener("submit", async (e) => {
                 return;
             }
             
-            const selectedCategory = userCategories.find(cat => cat.category_id === categoryId);
+            const selectedCategory = userData.categories.find(cat => cat.category_id === categoryId);
             categoryName = selectedCategory ? selectedCategory.name : 'Unknown Category';
         }
 
-      // FIX: Better amount validation and parsing
+        // FIX: Better amount validation and parsing
         const amountValue = planAmountInput.value.trim();
         if (!amountValue) {
             alert("Please enter a budget amount");
@@ -525,11 +589,11 @@ createPlanForm.addEventListener("submit", async (e) => {
         }
 
         if (amount < 1) {
-            alert("Minimum budget amount is ₣1");
+            alert("Minimum budget amount is " + formatCurrency(1));
             return;
         }
         if (amount > 10000000) {
-            alert("Maximum budget amount is ₣10,000,000");
+            alert("Maximum budget amount is " + formatCurrency(10000000));
             return;
         }
 
@@ -552,7 +616,7 @@ createPlanForm.addEventListener("submit", async (e) => {
 
         console.log("Creating budget plan with data:", planData);
 
-        const planRes = await apiCall(`${API}/budget_plans/budget_plans`, {  // FIXED: Using apiCall instead of fetch
+        const planRes = await apiCall(`${API}/budget_plans/budget_plans`, {
             method: 'POST',
             body: JSON.stringify(planData)
         });
@@ -578,10 +642,8 @@ createPlanForm.addEventListener("submit", async (e) => {
         // Set default dates again
         initializeCreatePlanFormDates();
         
-        // Reload data
-        await loadBudgetPlans();
-        await loadExistingPlans();
-        await loadHomeData(); // Refresh home section stats
+        // Reload all data after changes
+        await loadAllUserData();
         
     } catch (error) {
         console.error("Error creating budget plan:", error);
@@ -608,7 +670,7 @@ function updatePlanPreview() {
             newCategoryName.value : 
             planCategory.options[planCategory.selectedIndex].text;
         
-        previewAmount.textContent = `₣${amount.toFixed(2)}`;
+        previewAmount.textContent = formatCurrency(amount);
         
         // Calculate and display duration
         const start = new Date(planStartDate.value);
@@ -642,7 +704,7 @@ function displayExistingPlans(plans) {
     }
 
     const plansHTML = plans.map(plan => {
-        const category = userCategories.find(cat => cat.category_id === plan.category_id);
+        const category = userData.categories.find(cat => cat.category_id === plan.category_id);
         const categoryName = category ? category.name : 'Unknown Category';
         const startDate = new Date(plan.start_date).toLocaleDateString();
         const endDate = new Date(plan.end_date).toLocaleDateString();
@@ -658,10 +720,10 @@ function displayExistingPlans(plans) {
                         ${startDate} - ${endDate}
                     </div>
                     <div class="plan-details">
-                        Spent: ₣${spent.toFixed(2)} | Remaining: ₣${remaining.toFixed(2)}
+                        Spent: ${formatCurrency(spent)} | Remaining: ${formatCurrency(remaining)}
                     </div>
                 </div>
-                <div class="plan-amount">₣${total.toFixed(2)}</div>
+                <div class="plan-amount">${formatCurrency(total)}</div>
             </div>
         `;
     }).join('');
@@ -712,7 +774,7 @@ expenseCategory.addEventListener("change", () => {
 expenseForm.addEventListener("submit", async (e) => {
     e.preventDefault();
 
-    if (userBudgetPlans.length === 0) {
+    if (userData.budgetPlans.length === 0) {
         alert("Please create a budget plan first before adding expenses.");
         return;
     }
@@ -750,12 +812,12 @@ expenseForm.addEventListener("submit", async (e) => {
         }
     } else {
         categoryId = parseInt(expenseCategory.value);
-        const category = userCategories.find(cat => cat.category_id === categoryId);
+        const category = userData.categories.find(cat => cat.category_id === categoryId);
         categoryName = category ? category.name : 'Unknown';
     }
 
     const body = {
-        plan_id: userBudgetPlans[0].plan_id,
+        plan_id: userData.budgetPlans[0].plan_id,
         category_id: categoryId,
         amount: parseFloat(expenseAmount.value),
         description: `Expense for ${categoryName}`
@@ -772,8 +834,8 @@ expenseForm.addEventListener("submit", async (e) => {
             expenseForm.reset();
             otherCategoryInput.classList.add("hidden");
             
-            // Reload all data to reflect changes
-            await loadHomeData();
+            // Reload all data after changes
+            await loadAllUserData();
         } else {
             const error = await res.json();
             alert("Failed to add expense: " + (error.message || "Unknown error"));
@@ -786,18 +848,6 @@ expenseForm.addEventListener("submit", async (e) => {
 /* --------------------------
    LOAD EXPENSES FOR DASHBOARD
 --------------------------- */
-async function loadExpenses() {
-    try {
-        const res = await apiCall(`${API}/expenses/expenses`);
-        if (res && res.ok) {
-            const expenses = await res.json();
-            updateExpensesTable(expenses);
-        }
-    } catch (error) {
-        console.error('Failed to load expenses:', error);
-    }
-}
-
 function updateExpensesTable(expenses) {
     const tbody = document.querySelector('#expense-table tbody');
     tbody.innerHTML = '';
@@ -806,18 +856,135 @@ function updateExpensesTable(expenses) {
         const row = document.createElement('tr');
         
         // Find category name
-        const category = userCategories.find(cat => cat.category_id === expense.category_id);
+        const category = userData.categories.find(cat => cat.category_id === expense.category_id);
         const categoryName = category ? category.name : 'Unknown';
         
         row.innerHTML = `
             <td>${categoryName}</td>
-            <td>₣${expense.amount}</td>
+            <td>${formatCurrency(expense.amount)}</td>
             <td>${new Date(expense.expense_date).toLocaleDateString()}</td>
         `;
         
         tbody.appendChild(row);
     });
 }
+
+/* --------------------------
+   SETTINGS PANEL FUNCTIONALITY
+--------------------------- */
+settingsBtn.addEventListener("click", () => {
+    settingsPanel.classList.remove("hidden");
+    settingsPanel.style.display = 'flex';
+});
+
+closeSettings.addEventListener("click", () => {
+    settingsPanel.classList.add("hidden");
+    settingsPanel.style.display = 'none';
+});
+
+// Close settings when clicking outside
+settingsPanel.addEventListener("click", (e) => {
+    if (e.target === settingsPanel) {
+        settingsPanel.classList.add("hidden");
+        settingsPanel.style.display = 'none';
+    }
+});
+
+/* --------------------------
+   CURRENCY SWITCHING
+--------------------------- */
+currencySelect.addEventListener("change", async (e) => {
+    const newCurrency = e.target.value;
+    
+    try {
+        const res = await apiCall(`${API}/auth/update_currency`, {
+            method: 'PUT',
+            body: JSON.stringify({ currency: newCurrency })
+        });
+        
+        if (res && res.ok) {
+            userData.currency = newCurrency;
+            updateAllDisplays(); // Refresh all currency displays
+            alert(`Currency changed to ${newCurrency}`);
+        } else {
+            alert("Failed to update currency");
+            // Revert selection
+            currencySelect.value = userData.currency;
+        }
+    } catch (error) {
+        console.error('Error updating currency:', error);
+        currencySelect.value = userData.currency; // Revert on error
+    }
+});
+
+/* --------------------------
+   PROFILE PICTURE UPDATE
+--------------------------- */
+updatePictureBtn.addEventListener("click", async () => {
+    const pictureUrl = profilePicUrl.value.trim();
+    
+    if (!pictureUrl) {
+        alert("Please enter a profile picture URL");
+        return;
+    }
+
+    try {
+        const res = await apiCall(`${API}/auth/update_picture`, {
+            method: 'PUT',
+            body: JSON.stringify({ profile_picture_url: pictureUrl })
+        });
+
+        if (res && res.ok) {
+            alert("Profile picture updated successfully!");
+            // Reload profile to get updated data
+            await loadUserProfile();
+        } else {
+            const error = await res.json();
+            alert("Failed to update profile picture: " + (error.error || "Unknown error"));
+        }
+    } catch (error) {
+        alert("Error updating profile picture: " + error.message);
+    }
+});
+
+/* --------------------------
+   CHANGE PASSWORD
+--------------------------- */
+changePasswordBtn.addEventListener("click", async () => {
+    const oldPass = oldPassword.value;
+    const newPass = newPassword.value;
+
+    if (!oldPass || !newPass) {
+        alert("Please fill in both password fields");
+        return;
+    }
+
+    if (newPass.length < 6) {
+        alert("New password must be at least 6 characters long");
+        return;
+    }
+
+    try {
+        const res = await apiCall(`${API}/auth/change_password`, {
+            method: 'PUT',
+            body: JSON.stringify({ 
+                old_password: oldPass, 
+                new_password: newPass 
+            })
+        });
+
+        if (res && res.ok) {
+            alert("Password changed successfully!");
+            oldPassword.value = "";
+            newPassword.value = "";
+        } else {
+            const error = await res.json();
+            alert("Failed to change password: " + (error.error || "Unknown error"));
+        }
+    } catch (error) {
+        alert("Error changing password: " + error.message);
+    }
+});
 
 /* --------------------------
    QUOTES
@@ -845,30 +1012,6 @@ async function loadQuote() {
 }
 
 /* --------------------------
-   SETTINGS PANEL
---------------------------- */
-settingsBtn.addEventListener("click", () => {
-    settingsPanel.classList.remove("hidden");
-});
-
-closeSettings.addEventListener("click", () => {
-    settingsPanel.classList.add("hidden");
-});
-
-/* --------------------------
-   DARK MODE TOGGLE
---------------------------- */
-themeSwitcher.addEventListener("change", (e) => {
-    if (e.target.value === "dark") {
-        document.body.classList.add("dark");
-        localStorage.setItem('theme', 'dark');
-    } else {
-        document.body.classList.remove("dark");
-        localStorage.setItem('theme', 'light');
-    }
-});
-
-/* --------------------------
    PAGE LOAD
 --------------------------- */
 document.addEventListener("DOMContentLoaded", () => {
@@ -878,7 +1021,6 @@ document.addEventListener("DOMContentLoaded", () => {
     
     // Load saved theme
     const savedTheme = localStorage.getItem('theme') || 'light';
-    themeSwitcher.value = savedTheme;
     if (savedTheme === 'dark') {
         document.body.classList.add('dark');
     }
@@ -886,37 +1028,8 @@ document.addEventListener("DOMContentLoaded", () => {
     if (authToken) {
         showPage(app);
         showSection(homeSection);
-        loadHomeData();
+        loadAllUserData();
     } else {
         showPage(loginPage);
     }
 });
-
-
-// Add this helper function for debugging
-async function debugApiCall(url, options = {}) {
-    console.log("Making API call to:", url);
-    console.log("Request options:", options);
-    
-    try {
-        const response = await fetch(url, {
-            headers: getAuthHeaders(),
-            ...options
-        });
-        
-        console.log("Response status:", response.status);
-        const responseText = await response.text();
-        console.log("Response text:", responseText);
-        
-        // Try to parse as JSON, but keep text if it fails
-        try {
-            const jsonData = JSON.parse(responseText);
-            return { ok: response.ok, status: response.status, data: jsonData };
-        } catch (e) {
-            return { ok: response.ok, status: response.status, data: responseText };
-        }
-    } catch (error) {
-        console.error("API call failed:", error);
-        throw error;
-    }
-}

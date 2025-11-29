@@ -117,3 +117,38 @@ def update_picture():
 
     return jsonify({"message": "picture_updated"}), 200
 
+
+
+# Add to your auth_routes.py
+
+@auth_bp.route("/profile", methods=["GET"])
+@jwt_required
+def get_profile():
+    user_id = g.current_user["user_id"]
+    user = User.query.get(user_id)
+    
+    return jsonify({
+        "user_id": user.user_id,
+        "username": user.username,
+        "email": user.email,
+        "profile_picture_url": user.profile_picture_url,
+        "currency": user.currency
+    }), 200
+
+@auth_bp.route("/update_currency", methods=["PUT"])
+@jwt_required
+def update_currency():
+    user_id = g.current_user["user_id"]
+    data = request.get_json()
+    
+    currency = data.get("currency")
+    if currency not in ['RWF', 'USD', 'EUR', 'CNY']:
+        return jsonify({"error": "invalid_currency"}), 400
+    
+    user = User.query.get(user_id)
+    user.currency = currency
+    db.session.commit()
+    
+    return jsonify({"message": "currency_updated"}), 200
+
+

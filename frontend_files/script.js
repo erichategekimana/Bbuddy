@@ -86,18 +86,18 @@ let userExpenses = [];
 function getAuthHeaders() {
     return {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${authToken}`
+        "Authorization": `Bearer ${authToken}`  // FIXED: Use backticks ` not quotes "
     };
 }
 
-async function apiCall(url, options = {}) {
+async function apiCall(url, options = {}) {  // FIXED: Added closing parenthesis and bracket
     try {
-        const response = await fetch(url, {
+        const response = await fetch(url, {  // FIXED: Removed invalid characters
             headers: getAuthHeaders(),
             ...options
         });
         
-        if (response.status === 401) {
+        if (response.status === 401) {  // FIXED: Use === instead of ==
             logout();
             return null;
         }

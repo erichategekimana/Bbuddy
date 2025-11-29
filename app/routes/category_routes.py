@@ -1,22 +1,23 @@
-from flask import Blueprint, request, jsonify, g  # ADDED 'g' import
+from flask import Blueprint, request, jsonify, g  # Make sure 'g' is imported
 from app.models.category_model import Category
 from app import db
-from app.middleware.auth_middleware import token_required
-from app.schemas import CategorySchema  # ADDED import
-from app.utils import validate_json  # ADDED import
+from app.schemas import CategorySchema
+from app.utils import validate_json
+from ..auth import jwt_required  # Change from token_required to jwt_required
 
 categories_bp = Blueprint("categories", __name__)
 
 # Create a category
 @categories_bp.route("/categories", methods=["POST"])
-@token_required
-@validate_json(CategorySchema)  # ADDED schema validation
-def create_category(current_user, validated):
+@jwt_required  # Changed to jwt_required
+@validate_json(CategorySchema)
+def create_category(validated):  # Remove current_user parameter
+    user_id = g.current_user["user_id"]  # Get user_id from g.current_user
     name = validated.name
     description = validated.description
 
-    # Make sure category name is unique
-    existing = Category.query.filter_by(name=name, user_id=current_user.user_id).first()
+    # Make sure category name is unique for this user
+    existing = Category.query.filter_by(name=name, user_id=user_id).first()
     if existing:
         return jsonify({"error": "Category already exists"}), 409
 
@@ -24,7 +25,7 @@ def create_category(current_user, validated):
     category = Category(
         name=name,
         description=description,
-        user_id=current_user.user_id
+        user_id=user_id  # Use user_id from g.current_user
     )
     db.session.add(category)
     db.session.commit()
@@ -36,9 +37,10 @@ def create_category(current_user, validated):
 
 # Get all categories
 @categories_bp.route("/categories", methods=["GET"])
-@token_required
-def get_categories(current_user):
-    categories = Category.query.filter_by(user_id=current_user.user_id).all()
+@jwt_required  # Changed to jwt_required
+def get_categories():
+    user_id = g.current_user["user_id"]  # Get user_id from g.current_user
+    categories = Category.query.filter_by(user_id=user_id).all()
     return jsonify([
         {"category_id": c.category_id, "name": c.name, "description": c.description}
         for c in categories
@@ -46,11 +48,12 @@ def get_categories(current_user):
 
 # GET SINGLE CATEGORY
 @categories_bp.route("/categories/<int:category_id>", methods=["GET"])
-@token_required
-def get_single_category(current_user, category_id):
+@jwt_required  # Changed to jwt_required
+def get_single_category(category_id):
+    user_id = g.current_user["user_id"]  # Get user_id from g.current_user
     category = Category.query.filter_by(
         category_id=category_id,
-        user_id=current_user.user_id
+        user_id=user_id
     ).first()
 
     if not category:
@@ -64,12 +67,13 @@ def get_single_category(current_user, category_id):
 
 # UPDATE CATEGORY
 @categories_bp.route("/categories/<int:category_id>", methods=["PUT"])
-@token_required
-@validate_json(CategorySchema)  # ADDED schema validation
-def update_category(current_user, category_id, validated):
+@jwt_required  # Changed to jwt_required
+@validate_json(CategorySchema)
+def update_category(category_id, validated):  # Remove current_user parameter
+    user_id = g.current_user["user_id"]  # Get user_id from g.current_user
     category = Category.query.filter_by(
         category_id=category_id,
-        user_id=current_user.user_id
+        user_id=user_id
     ).first()
 
     if not category:
@@ -80,7 +84,7 @@ def update_category(current_user, category_id, validated):
 
     if name:
         # Check if name already exists for same user
-        existing = Category.query.filter_by(name=name, user_id=current_user.user_id).first()
+        existing = Category.query.filter_by(name=name, user_id=user_id).first()
         if existing and existing.category_id != category_id:
             return jsonify({"error": "Category name already used"}), 409
         category.name = name
@@ -94,11 +98,12 @@ def update_category(current_user, category_id, validated):
 
 # DELETE CATEGORY
 @categories_bp.route("/categories/<int:category_id>", methods=["DELETE"])
-@token_required
-def delete_category(current_user, category_id):
+@jwt_required  # Changed to jwt_required
+def delete_category(category_id):
+    user_id = g.current_user["user_id"]  # Get user_id from g.current_user
     category = Category.query.filter_by(
         category_id=category_id,
-        user_id=current_user.user_id
+        user_id=user_id
     ).first()
 
     if not category:
@@ -106,7 +111,7 @@ def delete_category(current_user, category_id):
 
     # Check if category is used by any budget plan
     from app.models.budget_plan_model import BudgetPlan
-    in_plans = BudgetPlan.query.filter_by(category_id=category_id, user_id=current_user.user_id).first()
+    in_plans = BudgetPlan.query.filter_by(category_id=category_id, user_id=user_id).first()
     if in_plans:
         return jsonify({
             "error": "category_in_use",
@@ -115,7 +120,7 @@ def delete_category(current_user, category_id):
 
     # Check if category is used by any expense
     from app.models.expense_model import Expense
-    in_expenses = Expense.query.filter_by(category_id=category_id, user_id=current_user.user_id).first()
+    in_expenses = Expense.query.filter_by(category_id=category_id, user_id=user_id).first()
     if in_expenses:
         return jsonify({
             "error": "category_in_use",

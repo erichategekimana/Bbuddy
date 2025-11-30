@@ -688,3 +688,25 @@ body.dark {
         padding: 12px 20px;
     }
 }
+
+
+/* Currency Display in Settings */
+.currency-display {
+    padding: 10px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    text-align: center;
+}
+
+.currency-display strong {
+    display: block;
+    color: var(--text);
+    margin-bottom: 5px;
+}
+
+.currency-display small {
+    color: var(--text);
+    opacity: 0.7;
+    font-size: 12px;
+}

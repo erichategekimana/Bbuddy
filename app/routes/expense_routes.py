@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify, g
 from app.models.expense_model import Expense
 from app.models.budget_plan_model import BudgetPlan
 from app import db
+from app.models.category_model import Category
 from app.utils import db_commit_or_rollback, validate_json
 from app.schemas import AddExpenseSchema
 from ..auth import jwt_required
@@ -35,16 +36,21 @@ def add_expense(validated):
     )
 
     db.session.add(expense)
-    db.session.flush()
+    db.session.flush()  # This generates the expense_id and expense_date
 
     # Update plan spent safely
     plan.spent = plan.spent + amount
 
+    # Return complete expense data including auto-generated fields
     return jsonify({
         "message": "expense_added",
-        "expense_id": expense.expense_id
+        "expense_id": expense.expense_id,
+        "expense_date": str(expense.expense_date),  # Add this line
+        "amount": float(expense.amount),
+        "category_id": expense.category_id,
+        "plan_id": expense.plan_id,
+        "description": expense.description
     }), 201
-
 
 # get all expense
 

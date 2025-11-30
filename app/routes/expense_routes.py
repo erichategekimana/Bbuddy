@@ -75,7 +75,7 @@ def get_expenses():
 
 # Get expense for specific plan
 
-@expenses_bp.route("/plan/<int:plan_id>", methods=["GET"])
+@expenses_bp.route("expenses/<int:plan_id>", methods=["GET"])
 @jwt_required
 def get_expenses_by_plan(plan_id):
     user_id = g.current_user["user_id"]
@@ -131,6 +131,9 @@ def update_expense(expense_id):
     expense = Expense.query.filter_by(expense_id=expense_id, user_id=user_id).first()
     if not expense:
         return jsonify({"error": "not_found", "message": "Expense not found"}), 404
+     # ADD THIS LINE to handle expense_date updates:
+    if "expense_date" in data:
+        expense.expense_date = data["expense_date"]
 
     # Restore old amount to plan.spent
     old_amount = expense.amount

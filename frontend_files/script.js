@@ -150,6 +150,9 @@ function logout() {
 }
 
 
+/* --------------------------
+   LOADING OVERLAY FUNCTIONS
+--------------------------- */
 function showLoading() {
     document.getElementById('loading-overlay').classList.remove('hidden');
 }

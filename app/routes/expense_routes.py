@@ -52,17 +52,23 @@ def add_expense(validated):
 @jwt_required
 def get_expenses():
     user_id = g.current_user["user_id"]
-    expenses = Expense.query.filter_by(user_id=user_id).all()
+    
+    # Join with categories to get category names
+    expenses = db.session.query(Expense, Category).\
+        join(Category, Expense.category_id == Category.category_id).\
+        filter(Expense.user_id == user_id).\
+        all()
 
     result = []
-    for e in expenses:
+    for expense, category in expenses:
         result.append({
-            "expense_id": e.expense_id,
-            "plan_id": e.plan_id,
-            "category_id": e.category_id,
-            "amount": float(e.amount),
-            "description": e.description,
-            "expense_date": str(e.expense_date)
+            "expense_id": expense.expense_id,
+            "plan_id": expense.plan_id,
+            "category_id": expense.category_id,
+            "category_name": category.name,  # Add category name
+            "amount": float(expense.amount),
+            "description": expense.description,
+            "expense_date": str(expense.expense_date)
         })
 
     return jsonify(result), 200
@@ -74,16 +80,20 @@ def get_expenses():
 def get_expenses_by_plan(plan_id):
     user_id = g.current_user["user_id"]
 
-    expenses = Expense.query.filter_by(plan_id=plan_id, user_id=user_id).all()
+    expenses = db.session.query(Expense, Category).\
+        join(Category, Expense.category_id == Category.category_id).\
+        filter(Expense.plan_id == plan_id, Expense.user_id == user_id).\
+        all()
 
     result = []
-    for e in expenses:
+    for expense, category in expenses:
         result.append({
-            "expense_id": e.expense_id,
-            "category_id": e.category_id,
-            "amount": float(e.amount),
-            "description": e.description,
-            "expense_date": str(e.expense_date)
+            "expense_id": expense.expense_id,
+            "category_id": expense.category_id,
+            "category_name": category.name,  # Add category name
+            "amount": float(expense.amount),
+            "description": expense.description,
+            "expense_date": str(expense.expense_date)
         })
 
     return jsonify(result), 200

@@ -81,13 +81,15 @@ const API = "/api";
 let authToken = localStorage.getItem("authToken") || null;
 
 /* --------------------------
-   GLOBAL DATA MANAGEMENT
+   GLOBAL DATA MANAGEMENT WITH SYNCHRONIZATION
 --------------------------- */
 let userData = {
     profile: null,
     categories: [],
     budgetPlans: [],
-    expenses: []
+    expenses: [],
+    isLoading: false,
+    loadPromise: null
 };
 
 /* --------------------------
@@ -109,6 +111,12 @@ function getAuthHeaders() {
 
 async function apiCall(url, options = {}) {
     try {
+        if (!authToken) {
+            console.error("No auth token available");
+            logout();
+            return null;
+        }
+
         const response = await fetch(url, {
             headers: getAuthHeaders(),
             ...options
@@ -129,98 +137,50 @@ async function apiCall(url, options = {}) {
 function logout() {
     localStorage.removeItem("authToken");
     authToken = null;
-    userData = { profile: null, categories: [], budgetPlans: [], expenses: [] };
+    userData = { 
+        profile: null, 
+        categories: [], 
+        budgetPlans: [], 
+        expenses: [],
+        isLoading: false,
+        loadPromise: null
+    };
     showPage(loginPage);
     alert("Session expired. Please login again.");
 }
 
 /* --------------------------
-   PAGE/SECTION NAVIGATION
---------------------------- */
-function showPage(page) {
-    loginPage.classList.add("hidden");
-    registerPage.classList.add("hidden");
-    app.classList.add("hidden");
-    page.classList.remove("hidden");
-}
-
-function showSection(section) {
-    // Hide all sections
-    homeSection.classList.add("hidden");
-    dashboardSection.classList.add("hidden");
-    createPlanSection.classList.add("hidden");
-    addExpenseSection.classList.add("hidden");
-    
-    // Remove active class from all nav buttons
-    navButtons.forEach(btn => btn.classList.remove("active"));
-    
-    // Show the selected section
-    section.classList.remove("hidden");
-    
-    // Add active class to corresponding nav button
-    const activeBtn = Array.from(navButtons).find(btn => 
-        btn.getAttribute("data-page") === section.id
-    );
-    if (activeBtn) {
-        activeBtn.classList.add("active");
-    }
-}
-
-/* --------------------------
-   NAVIGATION HANDLERS - NO MORE RELOADS
---------------------------- */
-showRegisterLink.addEventListener("click", (e) => {
-    e.preventDefault();
-    showPage(registerPage);
-});
-
-showLoginLink.addEventListener("click", (e) => {
-    e.preventDefault();
-    showPage(loginPage);
-});
-
-navButtons.forEach(button => {
-    button.addEventListener("click", () => {
-        const page = button.getAttribute("data-page");
-        switch(page) {
-            case "home-section":
-                showSection(homeSection);
-                // No reload - data is already loaded
-                break;
-            case "dashboard-section":
-                showSection(dashboardSection);
-                // Just update the table with existing data
-                updateExpensesTable(userData.expenses);
-                break;
-            case "create-plan-section":
-                showSection(createPlanSection);
-                initializeCreatePlanForm();
-                // Load existing plans (this is specific to this section)
-                loadExistingPlans();
-                break;
-            case "add-expense-section":
-                showSection(addExpenseSection);
-                // Categories are already loaded globally
-                break;
-        }
-    });
-});
-
-/* --------------------------
-   LOAD ALL USER DATA ONCE
+   DATA LOADING WITH SYNCHRONIZATION
 --------------------------- */
 async function loadAllUserData() {
-    try {
-        await Promise.all([
-            loadUserProfile(),
-            loadBudgetPlans(),
-            loadCategories(),
-            loadExpensesForStats()
-        ]);
-        updateAllDisplays();
-    } catch (error) {
-        console.error('Failed to load user data:', error);
+    // Prevent multiple simultaneous loads
+    if (userData.isLoading && userData.loadPromise) {
+        return userData.loadPromise;
     }
+
+    userData.isLoading = true;
+    userData.loadPromise = (async () => {
+        try {
+            console.log("Loading all user data...");
+            
+            // Load in sequence to ensure dependencies
+            await loadUserProfile();
+            await loadCategories();  // Categories first - they're needed everywhere
+            await loadBudgetPlans();
+            await loadExpenses();    // Expenses last - they depend on categories
+            
+            console.log("All user data loaded successfully");
+            updateAllDisplays();
+        } catch (error) {
+            console.error('Failed to load user data:', error);
+            throw error;
+        } finally {
+            userData.isLoading = false;
+            userData.loadPromise = null;
+        }
+    })();
+
+    return userData.loadPromise;
 }
 
 async function loadUserProfile() {
@@ -240,6 +200,7 @@ async function loadBudgetPlans() {
         const res = await apiCall(`${API}/budget_plans/budget_plans`);
         if (res && res.ok) {
             userData.budgetPlans = await res.json();
+            console.log("Loaded budget plans:", userData.budgetPlans.length);
         }
     } catch (error) {
         console.error('Failed to load budget plans:', error);
@@ -251,6 +212,7 @@ async function loadCategories() {
         const res = await apiCall(`${API}/categories/categories`);
         if (res && res.ok) {
             userData.categories = await res.json();
+            console.log("Loaded categories:", userData.categories.length);
             updateCategoryDropdowns();
         }
     } catch (error) {
@@ -258,43 +220,133 @@ async function loadCategories() {
     }
 }
 
-async function loadExpensesForStats() {
+async function loadExpenses() {
     try {
         const res = await apiCall(`${API}/expenses/expenses`);
         if (res && res.ok) {
             userData.expenses = await res.json();
+            console.log("Loaded expenses:", userData.expenses.length);
         }
     } catch (error) {
         console.error('Failed to load expenses:', error);
     }
 }
 
+/* --------------------------
+   CATEGORY NAME RESOLUTION - SAFE VERSION
+--------------------------- */
+function getCategoryName(categoryId) {
+    if (!userData.categories || userData.categories.length === 0) {
+        console.warn("Categories not loaded yet for ID:", categoryId);
+        return "Loading...";
+    }
+    
+    const category = userData.categories.find(cat => cat.category_id === categoryId);
+    if (!category) {
+        console.warn("Category not found for ID:", categoryId);
+        return "Unknown Category";
+    }
+    
+    return category.name;
+}
+
+function getCategoryNameFromExpense(expense) {
+    // Try to use category_name from expense first (if backend provides it)
+    if (expense.category_name) {
+        return expense.category_name;
+    }
+    
+    // Fallback to looking up by category_id
+    return getCategoryName(expense.category_id);
+}
+
+/* --------------------------
+   PAGE/SECTION NAVIGATION
+--------------------------- */
+function showPage(page) {
+    loginPage.classList.add("hidden");
+    registerPage.classList.add("hidden");
+    app.classList.add("hidden");
+    page.classList.remove("hidden");
+}
+
+function showSection(section) {
+    homeSection.classList.add("hidden");
+    dashboardSection.classList.add("hidden");
+    createPlanSection.classList.add("hidden");
+    addExpenseSection.classList.add("hidden");
+    
+    navButtons.forEach(btn => btn.classList.remove("active"));
+    
+    section.classList.remove("hidden");
+    
+    const activeBtn = Array.from(navButtons).find(btn => 
+        btn.getAttribute("data-page") === section.id
+    );
+    if (activeBtn) {
+        activeBtn.classList.add("active");
+    }
+}
+
+/* --------------------------
+   NAVIGATION HANDLERS - SYNCHRONIZED
+--------------------------- */
+showRegisterLink.addEventListener("click", (e) => {
+    e.preventDefault();
+    showPage(registerPage);
+});
+
+showLoginLink.addEventListener("click", (e) => {
+    e.preventDefault();
+    showPage(loginPage);
+});
+
+navButtons.forEach(button => {
+    button.addEventListener("click", () => {
+        const page = button.getAttribute("data-page");
+        switch(page) {
+            case "home-section":
+                showSection(homeSection);
+                break;
+            case "dashboard-section":
+                showSection(dashboardSection);
+                updateExpensesTable(userData.expenses);
+                break;
+            case "create-plan-section":
+                showSection(createPlanSection);
+                initializeCreatePlanForm();
+                loadExistingPlans();
+                break;
+            case "add-expense-section":
+                showSection(addExpenseSection);
+                break;
+        }
+    });
+});
+
+/* --------------------------
+   UPDATE DISPLAY FUNCTIONS
+--------------------------- */
 function updateAllDisplays() {
     updateBudgetPlanDisplay();
     updateQuickStats();
     updateExpensesTable(userData.expenses);
 }
 
-/* --------------------------
-   UPDATE DISPLAY FUNCTIONS
---------------------------- */
 function updateBudgetPlanDisplay() {
     if (userData.budgetPlans.length > 0) {
         const plan = userData.budgetPlans[0];
         
-        // Update amounts with currency formatting
         planAmount.textContent = formatCurrency(plan.amount);
         
         const spent = parseFloat(plan.spent || 0);
         const remaining = parseFloat(plan.amount) - spent;
         planRemaining.textContent = formatCurrency(remaining);
         
-        // Update progress bar
         const spentPercentage = (spent / parseFloat(plan.amount)) * 100;
         progressFill.style.width = `${Math.min(spentPercentage, 100)}%`;
         progressText.textContent = `${spentPercentage.toFixed(1)}% spent`;
         
-        // Change progress bar color based on usage
         if (spentPercentage > 80) {
             progressFill.style.background = 'var(--danger)';
         } else if (spentPercentage > 60) {
@@ -318,11 +370,9 @@ function updateQuickStats() {
 
 function updateProfileDisplay() {
     if (userData.profile) {
-        // Update settings form
         settingsName.value = userData.profile.username || '';
         profilePicUrl.value = userData.profile.profile_picture_url || '';
         
-        // Update profile picture in topbar
         if (userData.profile.profile_picture_url) {
             profilePic.src = userData.profile.profile_picture_url;
             profilePic.classList.remove("hidden");
@@ -402,7 +452,6 @@ loginForm.addEventListener("submit", async (e) => {
         showPage(app);
         showSection(homeSection);
 
-        // Load all data once after login
         await loadAllUserData();
 
         alert("Logged in successfully!");
@@ -542,7 +591,11 @@ createPlanForm.addEventListener("submit", async (e) => {
             }
             
             const selectedCategory = userData.categories.find(cat => cat.category_id === categoryId);
-            categoryName = selectedCategory ? selectedCategory.name : 'Unknown Category';
+            if (!selectedCategory) {
+                alert("Selected category not found. Please refresh and try again.");
+                return;
+            }
+            categoryName = selectedCategory.name;
         }
 
         const amountValue = planAmountInput.value.trim();
@@ -666,8 +719,7 @@ function displayExistingPlans(plans) {
     }
 
     const plansHTML = plans.map(plan => {
-        const category = userData.categories.find(cat => cat.category_id === plan.category_id);
-        const categoryName = category ? category.name : 'Unknown Category';
+        const categoryName = getCategoryName(plan.category_id);
         const startDate = new Date(plan.start_date).toLocaleDateString();
         const endDate = new Date(plan.end_date).toLocaleDateString();
         const spent = parseFloat(plan.spent || 0);
@@ -728,10 +780,13 @@ expenseCategory.addEventListener("change", () => {
 });
 
 /* --------------------------
-   ADD EXPENSE – SUBMIT
+   ADD EXPENSE – SUBMIT (FIXED SYNCHRONIZATION)
 --------------------------- */
 expenseForm.addEventListener("submit", async (e) => {
     e.preventDefault();
+
+    // Ensure we have the latest data
+    await loadAllUserData();
 
     if (userData.budgetPlans.length === 0) {
         alert("Please create a budget plan first before adding expenses.");
@@ -758,6 +813,7 @@ expenseForm.addEventListener("submit", async (e) => {
                 categoryId = newCategory.category_id;
                 categoryName = newCategory.name;
                 
+                // Reload categories to ensure consistency
                 await loadCategories();
             } else {
                 alert("Failed to create new category");
@@ -770,14 +826,21 @@ expenseForm.addEventListener("submit", async (e) => {
     } else {
         categoryId = parseInt(expenseCategory.value);
         const category = userData.categories.find(cat => cat.category_id === categoryId);
-        categoryName = category ? category.name : 'Unknown';
+        
+        if (!category) {
+            alert("Selected category not found. Please refresh and try again.");
+            return;
+        }
+        
+        categoryName = category.name;
     }
 
     const body = {
         plan_id: userData.budgetPlans[0].plan_id,
         category_id: categoryId,
         amount: parseFloat(expenseAmount.value),
-        description: `Expense for ${categoryName}`
+        description: `Expense for ${categoryName}`,
+        expense_date: expenseDate.value
     };
 
     try {
@@ -786,7 +849,12 @@ expenseForm.addEventListener("submit", async (e) => {
             body: JSON.stringify(body)
         });
 
-        if (res && res.ok) {
+        if (!res) {
+            alert("Authentication failed. Please login again.");
+            return;
+        }
+
+        if (res.ok) {
             alert(`Expense added successfully!`);
             expenseForm.reset();
             otherCategoryInput.classList.add("hidden");
@@ -794,25 +862,31 @@ expenseForm.addEventListener("submit", async (e) => {
             await loadAllUserData();
         } else {
             const error = await res.json();
-            alert("Failed to add expense: " + (error.message || "Unknown error"));
+            console.error("Expense creation error:", error);
+            alert("Failed to add expense: " + (error.error || error.message || "Unknown error"));
         }
     } catch (error) {
+        console.error("Error adding expense:", error);
         alert("Error adding expense: " + error.message);
     }
 });
 
 /* --------------------------
-   LOAD EXPENSES FOR DASHBOARD
+   EXPENSES TABLE WITH SAFE CATEGORY NAMES
 --------------------------- */
 function updateExpensesTable(expenses) {
     const tbody = document.querySelector('#expense-table tbody');
     tbody.innerHTML = '';
     
+    if (!expenses || expenses.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; padding: 20px;">No expenses found</td></tr>';
+        return;
+    }
+    
     expenses.forEach(expense => {
         const row = document.createElement('tr');
         
-        const category = userData.categories.find(cat => cat.category_id === expense.category_id);
-        const categoryName = category ? category.name : 'Unknown';
+        const categoryName = getCategoryNameFromExpense(expense);
         
         row.innerHTML = `
             <td>${categoryName}</td>

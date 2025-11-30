@@ -68,6 +68,10 @@
             <button class="nav-btn" data-page="create-plan-section">Create Plan</button>
             <button class="nav-btn" data-page="add-expense-section">Add Expense</button>
         </nav>
+        <!-- Loading Overlay -->
+        <div id="loading-overlay" class="hidden">
+            <div class="loading-spinner">Loading...</div>
+        </div>
 
 
 
@@ -231,23 +235,24 @@
         <section id="add-expense-section" class="section hidden">
             <h2>Add Expense</h2>
             <form id="expense-form" class="card">
-                <label>Category</label>
-                <select id="expense-category" required>
-                    <option value="">Select category</option>
-                    <!-- Categories will be loaded dynamically -->
-                </select>
+                 <label>Budget Plan</label>
+        <select id="expense-plan" required>
+            <option value="">Select budget plan</option>
+            <!-- Budget plans will be loaded dynamically -->
+        </select>
 
-                <input type="text" id="other-category" placeholder="Enter your category" class="hidden">
+        <label>Amount</label>
+        <input type="number" id="expense-amount" placeholder="Amount" required step="0.01">
 
-                <label>Amount</label>
-                <input type="number" id="expense-amount" placeholder="Amount" required step="0.01">
+        <label>Description</label>
+        <input type="text" id="expense-description" placeholder="What did you spend on?" required>
 
-                <label>Date</label>
-                <input type="date" id="expense-date" required>
+        <label>Date</label>
+        <input type="date" id="expense-date" required>
 
-                <button type="submit">Add Expense</button>
-            </form>
-        </section>
+        <button type="submit">Add Expense</button>
+    </form>
+</section>
 
 
 

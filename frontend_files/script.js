@@ -57,8 +57,8 @@ const previewDuration = document.getElementById("preview-duration");
 const existingPlansList = document.getElementById("existing-plans-list");
 
 /* ADD EXPENSE */
-const expenseCategory = document.getElementById("expense-category");
-const otherCategoryInput = document.getElementById("other-category");
+const expensePlan = document.getElementById("expense-plan"); // NEW
+const expenseDescription = document.getElementById("expense-description");
 const expenseAmount = document.getElementById("expense-amount");
 const expenseDate = document.getElementById("expense-date");
 
@@ -149,6 +149,17 @@ function logout() {
     alert("Session expired. Please login again.");
 }
 
+
+function showLoading() {
+    document.getElementById('loading-overlay').classList.remove('hidden');
+}
+
+function hideLoading() {
+    document.getElementById('loading-overlay').classList.add('hidden');
+}
+
+
+
 /* --------------------------
    DATA LOADING WITH SYNCHRONIZATION
 --------------------------- */
@@ -159,6 +170,7 @@ async function loadAllUserData() {
     }
 
     userData.isLoading = true;
+     showLoading();
     userData.loadPromise = (async () => {
         try {
             console.log("Loading all user data...");
@@ -177,6 +189,7 @@ async function loadAllUserData() {
         } finally {
             userData.isLoading = false;
             userData.loadPromise = null;
+            hideLoading();
         }
     })();
 
@@ -231,6 +244,7 @@ async function loadExpenses() {
         console.error('Failed to load expenses:', error);
     }
 }
+
 
 /* --------------------------
    CATEGORY NAME RESOLUTION - SAFE VERSION
@@ -386,26 +400,34 @@ function updateProfileDisplay() {
    CATEGORY DROPDOWNS
 --------------------------- */
 function updateCategoryDropdowns() {
-    updateExpenseCategoryDropdown();
+    updateExpensePlanDropdown();
     updatePlanCategoryDropdown();
 }
 
-function updateExpenseCategoryDropdown() {
-    while (expenseCategory.options.length > 1) {
-        expenseCategory.remove(1);
+function updateExpensePlanDropdown() {
+    while (expensePlan.options.length > 1) {
+        expensePlan.remove(1);
     }
     
-    userData.categories.forEach(category => {
+    if (userData.budgetPlans.length === 0) {
         const option = document.createElement('option');
-        option.value = category.category_id;
-        option.textContent = category.name;
-        expenseCategory.appendChild(option);
-    });
+        option.value = "";
+        option.textContent = "No budget plans available";
+        option.disabled = true;
+        expensePlan.appendChild(option);
+        return;
+    }
     
-    const otherOption = document.createElement('option');
-    otherOption.value = "other";
-    otherOption.textContent = "Other";
-    expenseCategory.appendChild(otherOption);
+    userData.budgetPlans.forEach(plan => {
+        const categoryName = getCategoryName(plan.category_id);
+        const startDate = new Date(plan.start_date).toLocaleDateString();
+        const endDate = new Date(plan.end_date).toLocaleDateString();
+        
+        const option = document.createElement('option');
+        option.value = plan.plan_id;
+        option.textContent = `${categoryName} - ${formatCurrency(plan.amount)} (${startDate} to ${endDate})`;
+        expensePlan.appendChild(option);
+    });
 }
 
 function updatePlanCategoryDropdown() {
@@ -765,85 +787,73 @@ function initializeCreatePlanForm() {
     loadExistingPlans();
 }
 
-/* --------------------------
-   ADD EXPENSE – CATEGORY HANDLING
---------------------------- */
-expenseCategory.addEventListener("change", () => {
-    if (expenseCategory.value === "other") {
-        otherCategoryInput.classList.remove("hidden");
-        otherCategoryInput.required = true;
-    } else {
-        otherCategoryInput.classList.add("hidden");
-        otherCategoryInput.required = false;
-        otherCategoryInput.value = "";
-    }
-});
+// /* --------------------------
+//    ADD EXPENSE – CATEGORY HANDLING
+// --------------------------- */
+// expenseCategory.addEventListener("change", () => {
+//     if (expenseCategory.value === "other") {
+//         otherCategoryInput.classList.remove("hidden");
+//         otherCategoryInput.required = true;
+//     } else {
+//         otherCategoryInput.classList.add("hidden");
+//         otherCategoryInput.required = false;
+//         otherCategoryInput.value = "";
+//     }
+// });
 
 /* --------------------------
-   ADD EXPENSE – SUBMIT (FIXED SYNCHRONIZATION)
+   ADD EXPENSE – SUBMIT (UPDATED FOR BUDGET PLANS)
 --------------------------- */
 expenseForm.addEventListener("submit", async (e) => {
     e.preventDefault();
-
-    // Ensure we have the latest data
-    await loadAllUserData();
-
-    if (userData.budgetPlans.length === 0) {
-        alert("Please create a budget plan first before adding expenses.");
-        return;
-    }
-
-    let categoryId;
-    let categoryName;
-
-    if (expenseCategory.value === "other") {
-        if (!otherCategoryInput.value.trim()) {
-            alert("Please enter a category name");
-            return;
-        }
-        
-        try {
-            const res = await apiCall(`${API}/categories/categories`, {
-                method: 'POST',
-                body: JSON.stringify({ name: otherCategoryInput.value.trim() })
-            });
-            
-            if (res && res.ok) {
-                const newCategory = await res.json();
-                categoryId = newCategory.category_id;
-                categoryName = newCategory.name;
-                
-                // Reload categories to ensure consistency
-                await loadCategories();
-            } else {
-                alert("Failed to create new category");
-                return;
-            }
-        } catch (error) {
-            alert("Error creating category: " + error.message);
-            return;
-        }
-    } else {
-        categoryId = parseInt(expenseCategory.value);
-        const category = userData.categories.find(cat => cat.category_id === categoryId);
-        
-        if (!category) {
-            alert("Selected category not found. Please refresh and try again.");
-            return;
-        }
-        
-        categoryName = category.name;
-    }
-
-    const body = {
-        plan_id: userData.budgetPlans[0].plan_id,
-        category_id: categoryId,
-        amount: parseFloat(expenseAmount.value),
-        description: `Expense for ${categoryName}`,
-        expense_date: expenseDate.value
-    };
+    showLoading();
 
     try {
+        // Ensure we have the latest data
+        await loadAllUserData();
+
+        if (userData.budgetPlans.length === 0) {
+            alert("Please create a budget plan first before adding expenses.");
+            hideLoading();
+            return;
+        }
+
+        const planId = parseInt(expensePlan.value);
+        if (!planId) {
+            alert("Please select a budget plan");
+            hideLoading();
+            return;
+        }
+
+        // Find the selected plan to get category_id
+        const selectedPlan = userData.budgetPlans.find(plan => plan.plan_id === planId);
+        if (!selectedPlan) {
+            alert("Selected plan not found. Please refresh and try again.");
+            hideLoading();
+            return;
+        }
+
+        const body = {
+            plan_id: planId,
+            category_id: selectedPlan.category_id, // Get from the selected plan
+            amount: parseFloat(expenseAmount.value),
+            description: expenseDescription.value.trim(),
+            expense_date: expenseDate.value
+        };
+
+        // Validate required fields
+        if (!body.description) {
+            alert("Please enter a description for the expense");
+            hideLoading();
+            return;
+        }
+
+        if (body.amount <= 0) {
+            alert("Please enter a valid amount");
+            hideLoading();
+            return;
+        }
+
         const res = await apiCall(`${API}/expenses/expenses`, {
             method: "POST",
             body: JSON.stringify(body)
@@ -851,13 +861,17 @@ expenseForm.addEventListener("submit", async (e) => {
 
         if (!res) {
             alert("Authentication failed. Please login again.");
+            hideLoading();
             return;
         }
 
         if (res.ok) {
             alert(`Expense added successfully!`);
             expenseForm.reset();
-            otherCategoryInput.classList.add("hidden");
+            
+            // Reset date to today
+            const today = new Date();
+            expenseDate.value = today.toISOString().split('T')[0];
             
             await loadAllUserData();
         } else {
@@ -868,6 +882,8 @@ expenseForm.addEventListener("submit", async (e) => {
     } catch (error) {
         console.error("Error adding expense:", error);
         alert("Error adding expense: " + error.message);
+    } finally {
+        hideLoading();
     }
 });
 

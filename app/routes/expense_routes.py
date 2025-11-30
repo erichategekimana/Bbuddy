@@ -18,38 +18,32 @@ def add_expense(validated):
     user_id = g.current_user["user_id"]
 
     plan_id = validated.plan_id
-    category_id = validated.category_id
     amount = Decimal(validated.amount)
     description = validated.description
+    expense_date = validated.expense_date  # ADD THIS
 
     # Ensure plan belongs to this user
     plan = BudgetPlan.query.filter_by(plan_id=plan_id, user_id=user_id).first()
     if not plan:
         return jsonify({"error": "forbidden", "message": "Plan does not belong to this user"}), 403
-
+    category_id = plan.category_id
     expense = Expense(
         user_id=user_id,
         plan_id=plan_id,
-        category_id=category_id,
-        amount=amount,
-        description=description
+        category_id=category_id,        amount=amount,
+        description=description,
+        expense_date=expense_date  # ADD THIS
     )
 
     db.session.add(expense)
-    db.session.flush()  # This generates the expense_id and expense_date
+    db.session.flush()
 
     # Update plan spent safely
     plan.spent = plan.spent + amount
 
-    # Return complete expense data including auto-generated fields
     return jsonify({
         "message": "expense_added",
-        "expense_id": expense.expense_id,
-        "expense_date": str(expense.expense_date),  # Add this line
-        "amount": float(expense.amount),
-        "category_id": expense.category_id,
-        "plan_id": expense.plan_id,
-        "description": expense.description
+        "expense_id": expense.expense_id
     }), 201
 
 # get all expense

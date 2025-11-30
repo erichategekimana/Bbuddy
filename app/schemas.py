@@ -33,7 +33,8 @@ class AddExpenseSchema(BaseModel):
     plan_id: int
     category_id: int
     amount: condecimal(gt=0)
-    description: Optional[constr(max_length=255)] = None
+    description: constr(min_length=1, max_length=255)  # Changed to required
+    expense_date: date  # ADD THIS - user will provide date
 
 # NEW SCHEMAS NEEDED:
 
@@ -65,6 +66,8 @@ class UpdateBudgetPlanSchema(BaseModel):
         return v
 
 class UpdateExpenseSchema(BaseModel):
-    category_id: Optional[int] = None
-    amount: Optional[condecimal(gt=0)] = None
-    description: Optional[constr(max_length=255)] = None
+    plan_id: int
+    category_id: int
+    amount: condecimal(gt=0)
+    description: constr(min_length=1, max_length=255)  # Changed to required
+    expense_date: date

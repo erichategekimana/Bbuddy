@@ -135,20 +135,20 @@ def get_profile():
         "currency": user.currency
     }), 200
 
-@auth_bp.route("/update_currency", methods=["PUT"])
-@jwt_required
-def update_currency():
-    user_id = g.current_user["user_id"]
-    data = request.get_json()
+# @auth_bp.route("/update_currency", methods=["PUT"])
+# @jwt_required
+# def update_currency():
+#     user_id = g.current_user["user_id"]
+#     data = request.get_json()
     
-    currency = data.get("currency")
-    if currency not in ['RWF', 'USD', 'EUR', 'CNY']:
-        return jsonify({"error": "invalid_currency"}), 400
+#     currency = data.get("currency")
+#     if currency not in ['RWF', 'USD', 'EUR', 'CNY']:
+#         return jsonify({"error": "invalid_currency"}), 400
     
-    user = User.query.get(user_id)
-    user.currency = currency
-    db.session.commit()
+#     user = User.query.get(user_id)
+#     user.currency = currency
+#     db.session.commit()
     
-    return jsonify({"message": "currency_updated"}), 200
+#     return jsonify({"message": "currency_updated"}), 200
 
 

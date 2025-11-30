@@ -9,7 +9,6 @@ class User(db.Model):
     email = db.Column(db.String(255), unique=True, nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
     profile_picture_url = db.Column(db.String(255))
-    currency = db.Column(db.String(10), default='RWF')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     budget_plans = db.relationship('BudgetPlan', backref='user', lazy=True)

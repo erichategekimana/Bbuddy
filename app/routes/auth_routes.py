@@ -131,8 +131,7 @@ def get_profile():
         "user_id": user.user_id,
         "username": user.username,
         "email": user.email,
-        "profile_picture_url": user.profile_picture_url,
-        "currency": user.currency
+        "profile_picture_url": user.profile_picture_url
     }), 200
 
 # @auth_bp.route("/update_currency", methods=["PUT"])

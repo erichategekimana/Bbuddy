@@ -418,6 +418,9 @@ function updateCategoryDropdowns() {
 }
 
 function updateExpensePlanDropdown() {
+    console.log("DEBUG updateExpensePlanDropdown: Starting...");
+    console.log("DEBUG: userData.budgetPlans =", userData.budgetPlans);
+    
     while (expensePlan.options.length > 1) {
         expensePlan.remove(1);
     }
@@ -428,20 +431,26 @@ function updateExpensePlanDropdown() {
         option.textContent = "No budget plans available";
         option.disabled = true;
         expensePlan.appendChild(option);
+        console.log("DEBUG: No plans available");
         return;
     }
     
-    userData.budgetPlans.forEach(plan => {
+    userData.budgetPlans.forEach((plan, index) => {
         const categoryName = getCategoryName(plan.category_id);
-        const startDate = new Date(plan.start_date).toLocaleDateString();
-        const endDate = new Date(plan.end_date).toLocaleDateString();
+        console.log(`DEBUG: Plan ${index}:`, {
+            plan_id: plan.plan_id,
+            category_id: plan.category_id,
+            categoryName: categoryName,
+            amount: plan.amount
+        });
         
         const option = document.createElement('option');
-        option.value = plan.plan_id;
-        option.textContent = `${categoryName} - ${formatCurrency(plan.amount)} (${startDate} to ${endDate})`;
+        option.value = plan.plan_id; // ← CRITICAL: What is plan.plan_id?
+        option.textContent = `${categoryName} - ${formatCurrency(plan.amount)}`;
         expensePlan.appendChild(option);
     });
-    console.log("DEBUG: Dropdown updated with", userData.budgetPlans.length, "plans");
+    
+    console.log("DEBUG: Dropdown populated with", userData.budgetPlans.length, "options");
 }
 
 function updatePlanCategoryDropdown() {
@@ -838,12 +847,12 @@ expenseForm.addEventListener("submit", async (e) => {
             return;
         }
 
-        // const planId = parseInt(expensePlan.value);
-        // if (!planId) {
-        //     alert("Please select a budget plan");
-        //     hideLoading();
-        //     return;
-        // }
+        const planId = parseInt(expensePlan.value);
+        if (!planId) {
+            alert("Please select a budget plan");
+            hideLoading();
+            return;
+        }
 
         // Find the selected plan to get category_id
         const selectedPlan = userData.budgetPlans.find(plan => plan.plan_id === planId);

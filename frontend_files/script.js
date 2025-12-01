@@ -181,6 +181,7 @@ async function loadAllUserData() {
         
         console.log("All user data loaded successfully");
         updateAllDisplays();
+        updateExpensePlanDropdown(); // ← NEED TO ADD THIS!
     } catch (error) {
         console.error('Failed to load user data:', error);
         throw error;
@@ -440,6 +441,7 @@ function updateExpensePlanDropdown() {
         option.textContent = `${categoryName} - ${formatCurrency(plan.amount)} (${startDate} to ${endDate})`;
         expensePlan.appendChild(option);
     });
+    console.log("DEBUG: Dropdown updated with", userData.budgetPlans.length, "plans");
 }
 
 function updatePlanCategoryDropdown() {
@@ -822,6 +824,9 @@ function initializeCreatePlanForm() {
 expenseForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     showLoading();
+    console.log("DEBUG: expensePlan value =", expensePlan.value);
+    console.log("DEBUG: expensePlan selectedIndex =", expensePlan.selectedIndex);
+    console.log("DEBUG: expensePlan options =", expensePlan.options);
 
     try {
         // Ensure we have the latest data
@@ -833,12 +838,12 @@ expenseForm.addEventListener("submit", async (e) => {
             return;
         }
 
-        const planId = parseInt(expensePlan.value);
-        if (!planId) {
-            alert("Please select a budget plan");
-            hideLoading();
-            return;
-        }
+        // const planId = parseInt(expensePlan.value);
+        // if (!planId) {
+        //     alert("Please select a budget plan");
+        //     hideLoading();
+        //     return;
+        // }
 
         // Find the selected plan to get category_id
         const selectedPlan = userData.budgetPlans.find(plan => plan.plan_id === planId);

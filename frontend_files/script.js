@@ -420,6 +420,7 @@ function updateCategoryDropdowns() {
 function updateExpensePlanDropdown() {
     console.log("DEBUG updateExpensePlanDropdown: Starting...");
     console.log("DEBUG: userData.budgetPlans =", userData.budgetPlans);
+    console.log("DEBUG: categoryName for", plan.category_id, "=", categoryName);
     
     while (expensePlan.options.length > 1) {
         expensePlan.remove(1);

@@ -167,36 +167,26 @@ function hideLoading() {
    DATA LOADING WITH SYNCHRONIZATION
 --------------------------- */
 async function loadAllUserData() {
-    // Prevent multiple simultaneous loads
-    if (userData.isLoading && userData.loadPromise) {
-        return userData.loadPromise;
+    // Remove the loading prevention logic since we want fresh data on section switches
+    showLoading();
+    
+    try {
+        console.log("Loading all user data...");
+        
+        // Load in sequence to ensure dependencies
+        await loadUserProfile();
+        await loadCategories();
+        await loadBudgetPlans();
+        await loadExpenses();
+        
+        console.log("All user data loaded successfully");
+        updateAllDisplays();
+    } catch (error) {
+        console.error('Failed to load user data:', error);
+        throw error;
+    } finally {
+        hideLoading();
     }
-
-    userData.isLoading = true;
-     showLoading();
-    userData.loadPromise = (async () => {
-        try {
-            console.log("Loading all user data...");
-            
-            // Load in sequence to ensure dependencies
-            await loadUserProfile();
-            await loadCategories();  // Categories first - they're needed everywhere
-            await loadBudgetPlans();
-            await loadExpenses();    // Expenses last - they depend on categories
-            
-            console.log("All user data loaded successfully");
-            updateAllDisplays();
-        } catch (error) {
-            console.error('Failed to load user data:', error);
-            throw error;
-        } finally {
-            userData.isLoading = false;
-            userData.loadPromise = null;
-            hideLoading();
-        }
-    })();
-
-    return userData.loadPromise;
 }
 
 async function loadUserProfile() {
@@ -217,9 +207,11 @@ async function loadBudgetPlans() {
         if (res && res.ok) {
             userData.budgetPlans = await res.json();
             console.log("Loaded budget plans:", userData.budgetPlans.length);
+            updateExpensePlanDropdown(); // Ensure dropdown gets updated
         }
     } catch (error) {
         console.error('Failed to load budget plans:', error);
+        throw error; // Re-throw to handle in parent function
     }
 }
 
@@ -233,6 +225,7 @@ async function loadCategories() {
         }
     } catch (error) {
         console.error('Failed to load categories:', error);
+        throw error; // Re-throw to handle in parent function
     }
 }
 
@@ -242,9 +235,11 @@ async function loadExpenses() {
         if (res && res.ok) {
             userData.expenses = await res.json();
             console.log("Loaded expenses:", userData.expenses.length);
+             updateExpensePlanDropdown(); // Ensure dropdown gets updated
         }
     } catch (error) {
         console.error('Failed to load expenses:', error);
+        throw error; // Re-throw to handle in parent function
     }
 }
 
@@ -319,24 +314,38 @@ showLoginLink.addEventListener("click", (e) => {
 });
 
 navButtons.forEach(button => {
-    button.addEventListener("click", () => {
+    button.addEventListener("click", async () => {
         const page = button.getAttribute("data-page");
-        switch(page) {
-            case "home-section":
-                showSection(homeSection);
-                break;
-            case "dashboard-section":
-                showSection(dashboardSection);
-                updateExpensesTable(userData.expenses);
-                break;
-            case "create-plan-section":
-                showSection(createPlanSection);
-                initializeCreatePlanForm();
-                loadExistingPlans();
-                break;
-            case "add-expense-section":
-                showSection(addExpenseSection);
-                break;
+        
+        showLoading(); // Show loading when switching sections
+        
+        try {
+            switch(page) {
+                case "home-section":
+                    await loadAllUserData(); // Reload all data for home
+                    showSection(homeSection);
+                    break;
+                case "dashboard-section":
+                    await loadAllUserData(); // Reload all data for dashboard
+                    showSection(dashboardSection);
+                    updateExpensesTable(userData.expenses);
+                    break;
+                case "create-plan-section":
+                    // Keep existing behavior - it already reloads plans
+                    showSection(createPlanSection);
+                    initializeCreatePlanForm();
+                    await loadExistingPlans(); // This already exists
+                    break;
+                case "add-expense-section":
+                    await loadAllUserData(); // Reload all data for add expense
+                    showSection(addExpenseSection);
+                    break;
+            }
+        } catch (error) {
+            console.error('Error loading section data:', error);
+            alert('Error loading data. Please try again.');
+        } finally {
+            hideLoading(); // Hide loading when done
         }
     });
 });
@@ -726,6 +735,7 @@ function updatePlanPreview() {
 }
 
 async function loadExistingPlans() {
+    showLoading(); // Add loading for create plan section
     try {
         const res = await apiCall(`${API}/budget_plans/budget_plans`);
         if (res && res.ok) {
@@ -734,6 +744,8 @@ async function loadExistingPlans() {
         }
     } catch (error) {
         console.error('Failed to load existing plans:', error);
+    } finally {
+        hideLoading(); // Hide loading when done
     }
 }
 

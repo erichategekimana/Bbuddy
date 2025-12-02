@@ -208,10 +208,6 @@ async function loadBudgetPlans() {
         if (res && res.ok) {
             userData.budgetPlans = await res.json();
             console.log("Loaded budget plans:", userData.budgetPlans.length);
-            console.log("DEBUG - Budget plans response:", plans);
-            console.log("DEBUG - First plan structure:", plans[0]);
-            console.log("DEBUG - First plan keys:", plans[0] ? Object.keys(plans[0]) : 'No plans');
-            userData.budgetPlans = plans;
             updateExpensePlanDropdown(); // Ensure dropdown gets updated
         }
     } catch (error) {

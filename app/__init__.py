@@ -25,15 +25,16 @@ def create_app():
     from .routes.budget_plan_routes import budget_plans_bp
     from .routes.expense_routes import expenses_bp
     from .routes.category_routes import categories_bp
-    from .routes.quote_routes import quote_bp
+    from .routes.quotes_routes import quotes_bp
 
     # Register routes
     app.register_blueprint(auth_bp, url_prefix="/api/auth")
     app.register_blueprint(budget_plans_bp, url_prefix="/api/budget_plans")
     app.register_blueprint(expenses_bp, url_prefix="/api/expenses")
     app.register_blueprint(categories_bp, url_prefix="/api/categories")
-    app.register_blueprint(quote_bp, url_prefix="/api/quotes")
+    app.register_blueprint(quotes_bp, url_prefix="/api/quotes")
     @app.teardown_appcontext
+    
     def shutdown_session(exception=None):
         db.session.remove()
 

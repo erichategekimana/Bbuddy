@@ -330,12 +330,14 @@ navButtons.forEach(button => {
                     await loadAllUserData(); // Reload all data for dashboard
                     showSection(dashboardSection);
                     updateExpensesTable(userData.expenses);
+                     // Delete listeners will be added by updateExpensesTable
                     break;
                 case "create-plan-section":
                     // Keep existing behavior - it already reloads plans
                     showSection(createPlanSection);
                     initializeCreatePlanForm();
                     await loadExistingPlans(); // This already exists
+                    // Delete listeners will be added by displayExistingPlans
                     break;
                 case "add-expense-section":
                     await loadAllUserData(); // Reload all data for add expense
@@ -774,7 +776,7 @@ function displayExistingPlans(plans) {
         const remaining = total - spent;
         
         return `
-            <div class="existing-plan-item">
+            <div class="existing-plan-item" data-plan-id="${plan.plan_id}">
                 <div class="plan-info">
                     <h4>${categoryName}</h4>
                     <div class="plan-details">
@@ -784,12 +786,18 @@ function displayExistingPlans(plans) {
                         Spent: ${formatCurrency(spent)} | Remaining: ${formatCurrency(remaining)}
                     </div>
                 </div>
-                <div class="plan-amount">${formatCurrency(total)}</div>
+                <div class="plan-actions">
+                    <div class="plan-amount">${formatCurrency(total)}</div>
+                    <button class="delete-plan-btn" data-plan-id="${plan.plan_id}">Delete</button>
+                </div>
             </div>
         `;
     }).join('');
 
     existingPlansList.innerHTML = plansHTML;
+    
+    // Add event listeners to delete buttons
+    addPlanDeleteListeners();
 }
 
 function initializeCreatePlanFormDates() {
@@ -934,7 +942,7 @@ function updateExpensesTable(expenses) {
     tbody.innerHTML = '';
     
     if (!expenses || expenses.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; padding: 20px;">No expenses found</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 20px;">No expenses found</td></tr>';
         return;
     }
     
@@ -947,10 +955,16 @@ function updateExpensesTable(expenses) {
             <td>${categoryName}</td>
             <td>${formatCurrency(expense.amount)}</td>
             <td>${new Date(expense.expense_date).toLocaleDateString()}</td>
+            <td class="action-cell">
+                <button class="delete-btn" data-expense-id="${expense.expense_id}">Delete</button>
+            </td>
         `;
         
         tbody.appendChild(row);
     });
+    
+    // Add event listeners to delete buttons
+    addExpenseDeleteListeners();
 }
 
 /* --------------------------
@@ -1085,3 +1099,113 @@ document.addEventListener("DOMContentLoaded", () => {
         showPage(loginPage);
     }
 });
+
+
+
+/* --------------------------
+   DELETE EXPENSE FUNCTION
+--------------------------- */
+async function deleteExpense(expenseId) {
+    if (!confirm("Are you sure you want to delete this expense? This action cannot be undone.")) {
+        return;
+    }
+    
+    showLoading();
+    
+    try {
+        const res = await apiCall(`${API}/expenses/expenses/${expenseId}`, {
+            method: 'DELETE'
+        });
+        
+        if (!res) {
+            alert("Authentication failed. Please login again.");
+            hideLoading();
+            return;
+        }
+        
+        if (res.ok) {
+            alert("Expense deleted successfully!");
+            // Reload all data to update the display
+            await loadAllUserData();
+        } else {
+            const error = await res.json();
+            alert("Failed to delete expense: " + (error.error || "Unknown error"));
+        }
+    } catch (error) {
+        console.error("Error deleting expense:", error);
+        alert("Error deleting expense: " + error.message);
+    } finally {
+        hideLoading();
+    }
+}
+
+/* --------------------------
+   DELETE BUDGET PLAN FUNCTION
+--------------------------- */
+async function deleteBudgetPlan(planId) {
+    if (!confirm("Are you sure you want to delete this budget plan? All associated expenses will also be deleted. This action cannot be undone.")) {
+        return;
+    }
+    
+    showLoading();
+    
+    try {
+        const res = await apiCall(`${API}/budget_plans/budget_plans/${planId}`, {
+            method: 'DELETE'
+        });
+        
+        if (!res) {
+            alert("Authentication failed. Please login again.");
+            hideLoading();
+            return;
+        }
+        
+        if (res.ok) {
+            alert("Budget plan deleted successfully!");
+            // Reload all data to update the display
+            await loadAllUserData();
+            
+            // If we're in the create plan section, reload the plans list
+            if (!createPlanSection.classList.contains('hidden')) {
+                await loadExistingPlans();
+            }
+        } else {
+            const error = await res.json();
+            alert("Failed to delete budget plan: " + (error.error || "Unknown error"));
+        }
+    } catch (error) {
+        console.error("Error deleting budget plan:", error);
+        alert("Error deleting budget plan: " + error.message);
+    } finally {
+        hideLoading();
+    }
+}
+
+/* --------------------------
+   ADD DELETE EVENT LISTENERS
+--------------------------- */
+function addExpenseDeleteListeners() {
+    const deleteButtons = document.querySelectorAll('.delete-btn');
+    
+    deleteButtons.forEach(button => {
+        button.addEventListener('click', async (e) => {
+            const expenseId = e.target.getAttribute('data-expense-id');
+            if (expenseId) {
+                await deleteExpense(expenseId);
+            }
+        });
+    });
+}
+
+function addPlanDeleteListeners() {
+    const deleteButtons = document.querySelectorAll('.delete-plan-btn');
+    
+    deleteButtons.forEach(button => {
+        button.addEventListener('click', async (e) => {
+            const planId = e.target.getAttribute('data-plan-id');
+            if (planId) {
+                await deleteBudgetPlan(planId);
+            }
+        });
+    });
+}

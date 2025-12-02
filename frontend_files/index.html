@@ -136,6 +136,7 @@
                             <th>Category</th>
                             <th>Amount</th>
                             <th>Date</th>
+                            <th>Actions</th> <!-- Add this column -->
                         </tr>
                     </thead>
                     <tbody>
@@ -225,6 +226,7 @@
         <h3>Your Existing Plans</h3>
         <div id="existing-plans-list">
             <p class="empty-state">No budget plans created yet.</p>
+            <!-- Plans will be dynamically added here -->
         </div>
     </div>
 </section>
@@ -292,6 +294,18 @@
         </div>
 
         <button id="close-settings" class="submit-btn">Close Settings</button>
+    </div>
+</div>
+
+<!-- confirmation action -->
+<div id="confirm-modal" class="hidden">
+    <div class="modal-content">
+        <h3 id="confirm-title">Confirm Action</h3>
+        <p id="confirm-message">Are you sure you want to proceed?</p>
+        <div class="modal-buttons">
+            <button id="confirm-cancel">Cancel</button>
+            <button id="confirm-ok">OK</button>
+        </div>
     </div>
 </div>
 

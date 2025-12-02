@@ -101,29 +101,24 @@ def update_plan(plan_id):
 @db_commit_or_rollback
 def delete_plan(plan_id):
     user_id = g.current_user.get("user_id")
+    
+    # Get the plan (this will load expenses due to relationship)
     plan = BudgetPlan.query.filter_by(plan_id=plan_id, user_id=user_id).first()
 
     if not plan:
         return jsonify({"error": "not_found", "message": "Plan not found"}), 404
 
+    # Get expense count from the relationship
+    expense_count = len(plan.expenses)
+    
+    # Database will handle cascade delete of expenses
     db.session.delete(plan)
-    return jsonify({"message": "plan_deleted"}), 200
-
-
-@budget_plans_bp.route("/budget_plans/<int:plan_id>/total_spent", methods=["GET"])
-@jwt_required
-def get_total_spent(plan_id):
-    user_id = g.current_user.get("user_id")
-    plan = BudgetPlan.query.filter_by(plan_id=plan_id, user_id=user_id).first()
-
-    if not plan:
-        return jsonify({"error": "not_found", "message": "Plan not found"}), 404
-
+    
     return jsonify({
+        "message": "plan_deleted",
         "plan_id": plan_id,
-        "total_spent": float(plan.spent)
+        "expenses_deleted_count": expense_count
     }), 200
-
 
 @budget_plans_bp.route("/budget_plans/<int:plan_id>/remaining", methods=["GET"])
 @jwt_required

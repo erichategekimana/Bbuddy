@@ -1052,3 +1052,58 @@ input:checked + .toggle-slider .toggle-label.dark {
     background: var(--danger);
     color: white;
 }
+
+
+
+/* -------------------------------------------------------
+   SIMPLE NOTIFICATION
+-------------------------------------------------------- */
+#simple-notification {
+    position: fixed;
+    top: 80px;
+    right: 20px;
+    padding: 15px 20px;
+    border-radius: 8px;
+    z-index: 9999;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    font-weight: 500;
+    font-size: 14px;
+    max-width: 300px;
+    word-wrap: break-word;
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+.notification-success {
+    background: var(--success);
+    color: white;
+    border-left: 4px solid #1a9950;
+}
+
+.notification-error {
+    background: var(--danger);
+    color: white;
+    border-left: 4px solid #c53030;
+}
+
+.notification-info {
+    background: var(--primary);
+    color: white;
+    border-left: 4px solid #2d5aa0;
+}
+
+.notification-warning {
+    background: var(--warning);
+    color: white;
+    border-left: 4px solid #e67e22;
+}

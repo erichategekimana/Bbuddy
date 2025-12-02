@@ -94,60 +94,6 @@ let userData = {
 };
 
 
-/* --------------------------
-   SIMPLE NOTIFICATION FUNCTION
---------------------------- */
-function showNotification(message, type = 'info') {
-    // Remove any existing notification
-    const existingNotification = document.getElementById('simple-notification');
-    if (existingNotification) {
-        existingNotification.remove();
-    }
-    
-    // Create notification element
-    const notification = document.createElement('div');
-    notification.id = 'simple-notification';
-    notification.textContent = message;
-    
-    // Style based on type
-    if (type === 'success') {
-        notification.style.backgroundColor = 'var(--success)';
-        notification.style.color = 'white';
-    } else if (type === 'error') {
-        notification.style.backgroundColor = 'var(--danger)';
-        notification.style.color = 'white';
-    } else if (type === 'info') {
-        notification.style.backgroundColor = 'var(--primary)';
-        notification.style.color = 'white';
-    } else if (type === 'warning') {
-        notification.style.backgroundColor = 'var(--warning)';
-        notification.style.color = 'white';
-    }
-    
-    // Basic styling
-    notification.style.position = 'fixed';
-    notification.style.top = '70px';
-    notification.style.right = '20px';
-    notification.style.padding = '12px 20px';
-    notification.style.borderRadius = '6px';
-    notification.style.zIndex = '9999';
-    notification.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
-    notification.style.fontWeight = '500';
-    notification.style.fontSize = '14px';
-    notification.style.maxWidth = '300px';
-    notification.style.wordWrap = 'break-word';
-    
-    // Add to page
-    document.body.appendChild(notification);
-    
-    // Auto-remove after 3 seconds for success/info, 5 seconds for errors
-    const duration = (type === 'error' || type === 'warning') ? 5000 : 3000;
-    setTimeout(() => {
-        if (notification.parentNode) {
-            notification.remove();
-        }
-    }, duration);
-}
 
 
 
@@ -200,11 +146,15 @@ if (themeToggle) {
    UPDATE PROFILE FUNCTION
 --------------------------- */
 async function updateProfile() {
+    console.log("DEBUG: Update profile function called");
+    
     // Validate inputs
     const username = settingsUsername.value.trim();
     const currentPass = currentPassword.value;
     const newPass = newPassword.value;
     const confirmPass = confirmPassword.value;
+    
+    console.log("DEBUG: Form values:", { username, currentPass, newPass, confirmPass });
     
     // Show loading
     showLoading();
@@ -219,37 +169,49 @@ async function updateProfile() {
         if (username && username !== userData.profile.username) {
             updateData.username = username;
             hasChanges = true;
+            console.log("DEBUG: Username will be updated");
         }
         
         // Check if password change requested
         if (currentPass && newPass && confirmPass) {
             if (newPass !== confirmPass) {
-                showNotification('New passwords do not match', 'error');
                 hideLoading();
+                updateProfileBtn.disabled = false;
+                updateProfileBtn.textContent = 'Update Profile';
+                showSimpleNotification('New passwords do not match', 'error');
                 return;
             }
             
             if (newPass.length < 8) {
-                showNotification('New password must be at least 8 characters', 'error');
                 hideLoading();
+                updateProfileBtn.disabled = false;
+                updateProfileBtn.textContent = 'Update Profile';
+                showSimpleNotification('New password must be at least 8 characters', 'error');
                 return;
             }
             
             updateData.old_password = currentPass;
             updateData.new_password = newPass;
             hasChanges = true;
+            console.log("DEBUG: Password will be updated");
         } else if ((currentPass || newPass || confirmPass) && 
                   !(currentPass && newPass && confirmPass)) {
-            showNotification('Please fill all password fields to change password', 'error');
             hideLoading();
+            updateProfileBtn.disabled = false;
+            updateProfileBtn.textContent = 'Update Profile';
+            showSimpleNotification('Please fill all password fields to change password', 'error');
             return;
         }
         
         if (!hasChanges) {
-            showNotification('No changes to update', 'info');
             hideLoading();
+            updateProfileBtn.disabled = false;
+            updateProfileBtn.textContent = 'Update Profile';
+            showSimpleNotification('No changes to update', 'info');
             return;
         }
+        
+        console.log("DEBUG: Sending update data:", updateData);
         
         // Make API call
         const res = await apiCall(`${API}/auth/update_profile`, {
@@ -257,14 +219,19 @@ async function updateProfile() {
             body: JSON.stringify(updateData)
         });
         
+        console.log("DEBUG: API response:", res);
+        
         if (!res) {
-            showNotification('Authentication failed. Please login again.', 'error');
             hideLoading();
+            updateProfileBtn.disabled = false;
+            updateProfileBtn.textContent = 'Update Profile';
+            showSimpleNotification('Authentication failed. Please login again.', 'error');
             return;
         }
         
         if (res.ok) {
             const result = await res.json();
+            console.log("DEBUG: Update successful:", result);
             
             // Clear password fields
             currentPassword.value = '';
@@ -274,22 +241,53 @@ async function updateProfile() {
             // Reload user profile
             await loadUserProfile();
             
-            showNotification('Profile updated successfully!', 'success');
+            showSimpleNotification('Profile updated successfully!', 'success');
             
         } else {
             const error = await res.json();
-            showNotification('Update failed: ' + (error.error || error.message || 'Unknown error'), 'error');
+            console.error("DEBUG: Update failed:", error);
+            showSimpleNotification('Update failed: ' + (error.error || error.message || 'Unknown error'), 'error');
         }
         
     } catch (error) {
         console.error('Error updating profile:', error);
-        showNotification('Error updating profile: ' + error.message, 'error');
+        showSimpleNotification('Error updating profile: ' + error.message, 'error');
     } finally {
         // Reset button and hide loading
         updateProfileBtn.disabled = false;
         updateProfileBtn.textContent = 'Update Profile';
         hideLoading();
     }
+}
+
+
+/* --------------------------
+   SIMPLE NOTIFICATION FUNCTION
+--------------------------- */
+function showSimpleNotification(message, type = 'info') {
+    console.log(`DEBUG: Showing notification: ${message}, type: ${type}`);
+    
+    // Remove any existing notification
+    const existingNotification = document.getElementById('simple-notification');
+    if (existingNotification) {
+        existingNotification.remove();
+    }
+    
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.id = 'simple-notification';
+    notification.textContent = message;
+    notification.className = `notification-${type}`;
+    
+    // Add to page
+    document.body.appendChild(notification);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.remove();
+        }
+    }, 5000);
 }
 
 

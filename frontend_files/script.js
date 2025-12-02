@@ -332,7 +332,7 @@ async function apiCall(url, options = {}) {
 }
 
 
-/* --------------------------logout FUNCTIONALITY
+/* --------------------------logout FUNCTIONALITY --------------------------- */
 function logout() {
     // Clear local storage
     localStorage.removeItem("authToken");
@@ -612,19 +612,6 @@ function updateQuickStats() {
     totalCategoriesElement.textContent = userData.categories.length;
 }
 
-function updateProfileDisplay() {
-    if (userData.profile) {
-        settingsName.value = userData.profile.username || '';
-        profilePicUrl.value = userData.profile.profile_picture_url || '';
-        
-        if (userData.profile.profile_picture_url) {
-            profilePic.src = userData.profile.profile_picture_url;
-            profilePic.classList.remove("hidden");
-        } else {
-            profilePic.classList.add("hidden");
-        }
-    }
-}
 
 /* --------------------------
    CATEGORY DROPDOWNS
@@ -1035,19 +1022,6 @@ function initializeCreatePlanForm() {
     loadExistingPlans();
 }
 
-// /* --------------------------
-//    ADD EXPENSE – CATEGORY HANDLING
-// --------------------------- */
-// expenseCategory.addEventListener("change", () => {
-//     if (expenseCategory.value === "other") {
-//         otherCategoryInput.classList.remove("hidden");
-//         otherCategoryInput.required = true;
-//     } else {
-//         otherCategoryInput.classList.add("hidden");
-//         otherCategoryInput.required = false;
-//         otherCategoryInput.value = "";
-//     }
-// });
 
 /* --------------------------
    ADD EXPENSE – SUBMIT (UPDATED FOR BUDGET PLANS)
@@ -1182,9 +1156,7 @@ function updateExpensesTable(expenses) {
     addExpenseDeleteListeners();
 }
 
-/* --------------------------
-   SETTINGS PANEL FUNCTIONALITY
---------------------------- */
+
 /* --------------------------
    SETTINGS PANEL FUNCTIONALITY
 --------------------------- */
@@ -1236,44 +1208,6 @@ if (updateProfileBtn) {
     updateProfileBtn.addEventListener('click', updateProfile);
 }
 
-/* --------------------------
-   CHANGE PASSWORD
---------------------------- */
-changePasswordBtn.addEventListener("click", async () => {
-    const oldPass = oldPassword.value;
-    const newPass = newPassword.value;
-
-    if (!oldPass || !newPass) {
-        alert("Please fill in both password fields");
-        return;
-    }
-
-    if (newPass.length < 6) {
-        alert("New password must be at least 6 characters long");
-        return;
-    }
-
-    try {
-        const res = await apiCall(`${API}/auth/change_password`, {
-            method: 'PUT',
-            body: JSON.stringify({ 
-                old_password: oldPass, 
-                new_password: newPass 
-            })
-        });
-
-        if (res && res.ok) {
-            alert("Password changed successfully!");
-            oldPassword.value = "";
-            newPassword.value = "";
-        } else {
-            const error = await res.json();
-            alert("Failed to change password: " + (error.error || "Unknown error"));
-        }
-    } catch (error) {
-        alert("Error changing password: " + error.message);
-    }
-});
 
 /* --------------------------
    QUOTES

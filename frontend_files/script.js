@@ -208,6 +208,10 @@ async function loadBudgetPlans() {
         if (res && res.ok) {
             userData.budgetPlans = await res.json();
             console.log("Loaded budget plans:", userData.budgetPlans.length);
+            console.log("DEBUG - Budget plans response:", plans);
+            console.log("DEBUG - First plan structure:", plans[0]);
+            console.log("DEBUG - First plan keys:", plans[0] ? Object.keys(plans[0]) : 'No plans');
+            userData.budgetPlans = plans;
             updateExpensePlanDropdown(); // Ensure dropdown gets updated
         }
     } catch (error) {
@@ -419,8 +423,6 @@ function updateCategoryDropdowns() {
 
 function updateExpensePlanDropdown() {
     console.log("DEBUG updateExpensePlanDropdown: Starting...");
-    console.log("DEBUG: userData.budgetPlans =", userData.budgetPlans);
-    console.log("DEBUG: categoryName for", plan.category_id, "=", categoryName);
     
     while (expensePlan.options.length > 1) {
         expensePlan.remove(1);

@@ -69,8 +69,8 @@ def update_profile():
         old_password = data["old_password"]
         new_password = data["new_password"]
         
-        # Verify old password
-        if not verify_password(old_password, user.password_hash):
+        # Verify old password - CORRECT ORDER: (hash, plain)
+        if not verify_password(user.password_hash, old_password):
             return jsonify({"error": "invalid_password", "message": "Current password is incorrect"}), 400
         
         # Update to new password

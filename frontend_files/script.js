@@ -836,14 +836,25 @@ expenseForm.addEventListener("submit", async (e) => {
     console.log("DEBUG: expensePlan selectedIndex =", expensePlan.selectedIndex);
     console.log("DEBUG: expensePlan options =", expensePlan.options);
 
+
+     // Log all form values
+    console.log("Form values:", {
+        plan: expensePlan.value,
+        description: expenseDescription.value,
+        amount: expenseAmount.value,
+        date: expenseDate.value
+    });
+    
+    // Check dropdown state
+    console.log("Dropdown options count:", expensePlan.options.length);
+    console.log("All dropdown options:");
+
     try {
         // Ensure we have the latest data
-        await loadAllUserData();
+        // await loadAllUserData();
 
         if (userData.budgetPlans.length === 0) {
-            alert("Please create a budget plan first before adding expenses.");
-            hideLoading();
-            return;
+            await loadBudgetPlans(); // Just load plans if needed
         }
 
         const planId = parseInt(expensePlan.value);

@@ -2,6 +2,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask import Blueprint, jsonify, request, g
 from ..database import db
 from ..models.user_model import User
+from ..utils import db_commit_or_rollback
 from ..database import db
 from ..schemas import RegisterSchema, LoginSchema
 from ..utils import validate_json
@@ -44,6 +45,7 @@ def login(validated):
 # update profile info(email, username)
 # Add this route to your auth_routes.py
 @auth_bp.route("/update_profile", methods=["PUT"])
+@db_commit_or_rollback
 @jwt_required
 def update_profile():
     user_id = g.current_user.get("user_id")
@@ -76,7 +78,7 @@ def update_profile():
         # Update to new password
         user.password_hash = hash_password(new_password)
     
-    db.session.flush()
+    db.session.commit()
     
     return jsonify({
         "message": "profile_updated",

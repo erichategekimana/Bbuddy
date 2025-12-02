@@ -259,43 +259,72 @@
 
 
        <!-- ======================= SETTINGS PANEL ======================= -->
+<!-- ======================= SETTINGS PANEL ======================= -->
 <div id="settings-panel" class="hidden">
     <div class="settings-content">
-        <h3>Account Settings</h3>
-
-        <!-- Profile Picture URL -->
-        <div class="form-group">
-            <label for="profile-pic-url">Profile Picture URL</label>
-            <input type="text" id="profile-pic-url" placeholder="Enter image URL">
-            <button id="update-picture-btn" class="form-button">Update Picture</button>
-        </div>
-
-        <!-- Change Username -->
-        <div class="form-group">
-            <label for="settings-name">Username</label>
-            <input type="text" id="settings-name" placeholder="Your username">
-        </div>
-
-        <!-- Currency Display (Fixed to RWF) -->
-        <div class="form-group">
-            <label>Currency</label>
-            <div class="currency-display">
-                <strong>RWF - Rwandan Franc</strong>
-                <small>Default currency</small>
+        <h3>Settings</h3>
+        
+        <!-- Theme Toggle -->
+        <div class="settings-section">
+            <h4>Appearance</h4>
+            <div class="theme-toggle">
+                <span>Theme</span>
+                <div class="toggle-switch">
+                    <input type="checkbox" id="theme-toggle">
+                    <label for="theme-toggle" class="toggle-slider">
+                        <span class="toggle-label light">Light</span>
+                        <span class="toggle-label dark">Dark</span>
+                    </label>
+                </div>
             </div>
         </div>
 
-        <!-- Change Password -->
-        <div class="form-group">
-            <label>Change Password</label>
-            <input type="password" id="old-password" placeholder="Current password" style="margin-bottom: 8px;">
-            <input type="password" id="new-password" placeholder="New password" style="margin-bottom: 8px;">
-            <button id="change-password-btn" class="form-button">Change Password</button>
+        <!-- Edit Profile Form -->
+        <div class="settings-section">
+            <h4>Edit Profile</h4>
+            <div class="form-group">
+                <label for="settings-username">Username</label>
+                <input type="text" id="settings-username" placeholder="Your username">
+            </div>
+            
+            <div class="form-group">
+                <label for="settings-email">Email</label>
+                <input type="email" id="settings-email" placeholder="Your email" disabled>
+                <small class="form-hint">Email cannot be changed</small>
+            </div>
+
+            <h5>Change Password</h5>
+            <div class="form-group">
+                <label for="current-password">Current Password</label>
+                <input type="password" id="current-password" placeholder="Enter current password">
+            </div>
+            
+            <div class="form-group">
+                <label for="new-password">New Password</label>
+                <input type="password" id="new-password" placeholder="Enter new password">
+            </div>
+            
+            <div class="form-group">
+                <label for="confirm-password">Confirm New Password</label>
+                <input type="password" id="confirm-password" placeholder="Confirm new password">
+            </div>
+            
+            <button id="update-profile-btn" class="submit-btn">Update Profile</button>
         </div>
 
-        <button id="close-settings" class="submit-btn">Close Settings</button>
+        <!-- Logout Button -->
+        <div class="settings-section">
+            <button id="logout-btn" class="logout-btn">Logout</button>
+        </div>
+
+        <button id="close-settings" class="close-btn">Close</button>
     </div>
 </div>
+
+
+
+
+
 
 <!-- confirmation action -->
 <div id="confirm-modal" class="hidden">

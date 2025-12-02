@@ -66,13 +66,14 @@ const expenseDate = document.getElementById("expense-date");
 const settingsPanel = document.getElementById("settings-panel");
 const settingsBtn = document.getElementById("settings-btn");
 const closeSettings = document.getElementById("close-settings");
-const settingsName = document.getElementById("settings-name");
-const profilePicUrl = document.getElementById("profile-pic-url");
-const updatePictureBtn = document.getElementById("update-picture-btn");
-const oldPassword = document.getElementById("old-password");
+const themeToggle = document.getElementById("theme-toggle");
+const settingsUsername = document.getElementById("settings-username");
+const settingsEmail = document.getElementById("settings-email");
+const currentPassword = document.getElementById("current-password");
 const newPassword = document.getElementById("new-password");
-const changePasswordBtn = document.getElementById("change-password-btn");
-const profilePic = document.getElementById("profile-pic");
+const confirmPassword = document.getElementById("confirm-password");
+const updateProfileBtn = document.getElementById("update-profile-btn");
+const logoutBtn = document.getElementById("logout-btn");
 
 /* BACKEND API BASE URL */
 const API = "/api";
@@ -92,11 +93,207 @@ let userData = {
     loadPromise: null
 };
 
+
+
+/* --------------------------
+   THEME TOGGLE FUNCTIONALITY
+--------------------------- */
+function initTheme() {
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    const isDark = savedTheme === 'dark';
+    
+    // Set theme on body
+    if (isDark) {
+        document.body.classList.add('dark');
+    } else {
+        document.body.classList.remove('dark');
+    }
+    
+    // Set toggle state
+    if (themeToggle) {
+        themeToggle.checked = isDark;
+    }
+    
+    console.log(`Theme initialized: ${savedTheme}`);
+}
+
+function toggleTheme() {
+    const isDark = themeToggle.checked;
+    
+    if (isDark) {
+        document.body.classList.add('dark');
+        localStorage.setItem('theme', 'dark');
+        console.log('Switched to dark theme');
+    } else {
+        document.body.classList.remove('dark');
+        localStorage.setItem('theme', 'light');
+        console.log('Switched to light theme');
+    }
+}
+
+// Initialize theme on page load
+initTheme();
+
+// Add event listener for theme toggle
+if (themeToggle) {
+    themeToggle.addEventListener('change', toggleTheme);
+}
+
+
+/* --------------------------
+   UPDATE PROFILE DISPLAY
+--------------------------- */
+function updateProfileDisplay() {
+    if (userData.profile) {
+        if (settingsUsername) {
+            settingsUsername.value = userData.profile.username || '';
+        }
+        if (settingsEmail) {
+            settingsEmail.value = userData.profile.email || '';
+        }
+        console.log('Profile display updated');
+    }
+}
+
+
+/* --------------------------
+   UPDATE PROFILE FUNCTION
+--------------------------- */
+async function updateProfile() {
+    // Validate inputs
+    const username = settingsUsername.value.trim();
+    const currentPass = currentPassword.value;
+    const newPass = newPassword.value;
+    const confirmPass = confirmPassword.value;
+    
+    // Show loading
+    updateProfileBtn.disabled = true;
+    updateProfileBtn.textContent = 'Updating...';
+    
+    try {
+        let updateData = {};
+        let hasChanges = false;
+        
+        // Check if username changed
+        if (username && username !== userData.profile.username) {
+            updateData.username = username;
+            hasChanges = true;
+        }
+        
+        // Check if password change requested
+        if (currentPass && newPass && confirmPass) {
+            if (newPass !== confirmPass) {
+                showSettingsMessage('New passwords do not match', 'error');
+                return;
+            }
+            
+            if (newPass.length < 8) {
+                showSettingsMessage('New password must be at least 8 characters', 'error');
+                return;
+            }
+            
+            updateData.old_password = currentPass;
+            updateData.new_password = newPass;
+            hasChanges = true;
+        } else if ((currentPass || newPass || confirmPass) && 
+                  !(currentPass && newPass && confirmPass)) {
+            showSettingsMessage('Please fill all password fields to change password', 'error');
+            return;
+        }
+        
+        if (!hasChanges) {
+            showSettingsMessage('No changes to update', 'error');
+            return;
+        }
+        
+        // Make API call
+        const res = await apiCall(`${API}/auth/update_profile`, {
+            method: 'PUT',
+            body: JSON.stringify(updateData)
+        });
+        
+        if (!res) {
+            showSettingsMessage('Authentication failed. Please login again.', 'error');
+            return;
+        }
+        
+        if (res.ok) {
+            const result = await res.json();
+            
+            // Clear password fields
+            currentPassword.value = '';
+            newPassword.value = '';
+            confirmPassword.value = '';
+            
+            // Reload user profile
+            await loadUserProfile();
+            
+            showSettingsMessage('Profile updated successfully!', 'success');
+            
+            // Hide success message after 3 seconds
+            setTimeout(() => {
+                hideSettingsMessage();
+            }, 3000);
+            
+        } else {
+            const error = await res.json();
+            showSettingsMessage('Update failed: ' + (error.error || error.message || 'Unknown error'), 'error');
+        }
+        
+    } catch (error) {
+        console.error('Error updating profile:', error);
+        showSettingsMessage('Error updating profile: ' + error.message, 'error');
+    } finally {
+        // Reset button
+        updateProfileBtn.disabled = false;
+        updateProfileBtn.textContent = 'Update Profile';
+    }
+}
+
+
+
+/* --------------------------
+   SETTINGS MESSAGE FUNCTIONS
+--------------------------- */
+function showSettingsMessage(message, type = 'info') {
+    // Create or get message element
+    let messageEl = document.getElementById('settings-message');
+    
+    if (!messageEl) {
+        messageEl = document.createElement('div');
+        messageEl.id = 'settings-message';
+        // Insert after the h3 in settings
+        const settingsContent = document.querySelector('.settings-content');
+        const h3 = settingsContent.querySelector('h3');
+        settingsContent.insertBefore(messageEl, h3.nextSibling);
+    }
+    
+    messageEl.textContent = message;
+    messageEl.className = type;
+    
+    // Auto-hide after 5 seconds for success messages
+    if (type === 'success') {
+        setTimeout(() => {
+            hideSettingsMessage();
+        }, 5000);
+    }
+}
+
+function hideSettingsMessage() {
+    const messageEl = document.getElementById('settings-message');
+    if (messageEl) {
+        messageEl.style.display = 'none';
+    }
+}
+
+
+
+
 /* --------------------------
    CURRENCY FORMATTING (HARDCODED TO RWF)
 --------------------------- */
 function formatCurrency(amount) {
-    return `₣${parseFloat(amount).toFixed(2)}`;
+    return `RWF${parseFloat(amount).toFixed(2)}`;
 }
 
 /* --------------------------
@@ -134,8 +331,14 @@ async function apiCall(url, options = {}) {
     }
 }
 
+
+/* --------------------------logout FUNCTIONALITY
 function logout() {
+    // Clear local storage
     localStorage.removeItem("authToken");
+    localStorage.removeItem('theme'); // Optional: keep theme preference
+    
+    // Reset global variables
     authToken = null;
     userData = { 
         profile: null, 
@@ -145,8 +348,19 @@ function logout() {
         isLoading: false,
         loadPromise: null
     };
+    
+    // Close settings if open
+    closeSettingsPanel();
+    
+    // Show login page
     showPage(loginPage);
-    alert("Session expired. Please login again.");
+    
+    console.log('User logged out');
+}
+
+// Add logout button event listener
+if (logoutBtn) {
+    logoutBtn.addEventListener('click', logout);
 }
 
 
@@ -360,6 +574,7 @@ function updateAllDisplays() {
     updateBudgetPlanDisplay();
     updateQuickStats();
     updateExpensesTable(userData.expenses);
+     // Expense delete listeners are added in updateExpensesTable
 }
 
 function updateBudgetPlanDisplay() {
@@ -970,51 +1185,56 @@ function updateExpensesTable(expenses) {
 /* --------------------------
    SETTINGS PANEL FUNCTIONALITY
 --------------------------- */
-settingsBtn.addEventListener("click", () => {
-    settingsPanel.classList.remove("hidden");
-    settingsPanel.style.display = 'flex';
+/* --------------------------
+   SETTINGS PANEL FUNCTIONALITY
+--------------------------- */
+if (settingsBtn) {
+    settingsBtn.addEventListener("click", () => {
+        settingsPanel.classList.remove("hidden");
+        settingsPanel.style.display = 'flex';
+        // Update profile fields when opening settings
+        updateProfileDisplay();
+    });
+}
+
+if (closeSettings) {
+    closeSettings.addEventListener("click", () => {
+        closeSettingsPanel();
+    });
+}
+
+if (settingsPanel) {
+    settingsPanel.addEventListener("click", (e) => {
+        if (e.target === settingsPanel) {
+            closeSettingsPanel();
+        }
+    });
+}
+
+// Close settings with Escape key
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !settingsPanel.classList.contains('hidden')) {
+        closeSettingsPanel();
+    }
 });
 
-closeSettings.addEventListener("click", () => {
+function closeSettingsPanel() {
     settingsPanel.classList.add("hidden");
     settingsPanel.style.display = 'none';
-});
-
-settingsPanel.addEventListener("click", (e) => {
-    if (e.target === settingsPanel) {
-        settingsPanel.classList.add("hidden");
-        settingsPanel.style.display = 'none';
-    }
-});
+    // Clear any messages
+    hideSettingsMessage();
+    // Clear password fields
+    if (currentPassword) currentPassword.value = '';
+    if (newPassword) newPassword.value = '';
+    if (confirmPassword) confirmPassword.value = '';
+}
 
 /* --------------------------
-   PROFILE PICTURE UPDATE
+   UPDATE PROFILE BUTTON
 --------------------------- */
-updatePictureBtn.addEventListener("click", async () => {
-    const pictureUrl = profilePicUrl.value.trim();
-    
-    if (!pictureUrl) {
-        alert("Please enter a profile picture URL");
-        return;
-    }
-
-    try {
-        const res = await apiCall(`${API}/auth/update_picture`, {
-            method: 'PUT',
-            body: JSON.stringify({ profile_picture_url: pictureUrl })
-        });
-
-        if (res && res.ok) {
-            alert("Profile picture updated successfully!");
-            await loadUserProfile();
-        } else {
-            const error = await res.json();
-            alert("Failed to update profile picture: " + (error.error || "Unknown error"));
-        }
-    } catch (error) {
-        alert("Error updating profile picture: " + error.message);
-    }
-});
+if (updateProfileBtn) {
+    updateProfileBtn.addEventListener('click', updateProfile);
+}
 
 /* --------------------------
    CHANGE PASSWORD
@@ -1084,12 +1304,12 @@ async function loadQuote() {
 --------------------------- */
 document.addEventListener("DOMContentLoaded", () => {
     const today = new Date();
-    expenseDate.value = today.toISOString().split('T')[0];
-    
-    const savedTheme = localStorage.getItem('theme') || 'light';
-    if (savedTheme === 'dark') {
-        document.body.classList.add('dark');
+    if (expenseDate) {
+        expenseDate.value = today.toISOString().split('T')[0];
     }
+    
+    // Initialize theme
+    initTheme();
     
     if (authToken) {
         showPage(app);
@@ -1098,8 +1318,9 @@ document.addEventListener("DOMContentLoaded", () => {
     } else {
         showPage(loginPage);
     }
+    
+    console.log('App initialized');
 });
-
 
 
 /* --------------------------

@@ -623,45 +623,264 @@ body.dark {
 /* -------------------------------------------------------
     SETTINGS PANEL
 -------------------------------------------------------- */
+/* -------------------------------------------------------
+    SETTINGS PANEL - REDESIGNED
+-------------------------------------------------------- */
 #settings-panel {
     position: fixed;
     top: 0;
     right: 0;
-    width: 260px;
+    width: 320px;
     height: 100vh;
     background: var(--card);
     border-left: 1px solid var(--border);
     padding: 20px;
     display: none;
     flex-direction: column;
-    z-index: 40;
+    z-index: 1000;
+    box-shadow: -5px 0 15px rgba(0, 0, 0, 0.1);
+    overflow-y: auto;
 }
 
-#settings-panel.show {
-    display: flex;
+.settings-content {
+    flex: 1;
 }
 
 .settings-content h3 {
-    margin-bottom: 15px;
+    margin-bottom: 25px;
+    color: var(--primary);
+    font-size: 22px;
+    border-bottom: 2px solid var(--primary);
+    padding-bottom: 10px;
 }
 
-.settings-content input,
-.settings-content select {
-    width: 100%;
-    padding: 12px;
+.settings-section {
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+}
+
+.settings-section:last-of-type {
+    border-bottom: none;
+}
+
+.settings-section h4 {
     margin-bottom: 15px;
-    border-radius: 6px;
-    border: 1px solid var(--border);
-    background: var(--bg);
+    color: var(--text);
+    font-size: 16px;
+}
+
+.settings-section h5 {
+    margin: 15px 0 10px;
+    color: var(--text);
+    font-size: 14px;
+    opacity: 0.8;
+}
+
+/* Theme Toggle */
+.theme-toggle {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+}
+
+.theme-toggle span {
+    font-weight: 500;
     color: var(--text);
 }
 
-#close-settings {
-    padding: 10px;
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 120px;
+    height: 34px;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--primary);
+    border-radius: 34px;
+    transition: .4s;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 10px;
+}
+
+.toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 26px;
+    width: 26px;
+    left: 4px;
+    bottom: 4px;
+    background: white;
+    border-radius: 50%;
+    transition: .4s;
+    z-index: 2;
+}
+
+input:checked + .toggle-slider {
+    background: var(--secondary);
+}
+
+input:checked + .toggle-slider:before {
+    transform: translateX(86px);
+}
+
+.toggle-label {
+    font-size: 12px;
+    font-weight: bold;
+    color: white;
+    z-index: 1;
+    transition: opacity 0.3s;
+}
+
+.toggle-label.light {
+    opacity: 1;
+}
+
+.toggle-label.dark {
+    opacity: 0.5;
+}
+
+input:checked + .toggle-slider .toggle-label.light {
+    opacity: 0.5;
+}
+
+input:checked + .toggle-slider .toggle-label.dark {
+    opacity: 1;
+}
+
+/* Form Elements in Settings */
+.settings-content input {
+    width: 100%;
+    padding: 10px 12px;
+    margin-bottom: 12px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+}
+
+.settings-content input:disabled {
+    background: var(--card);
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.settings-content input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px rgba(75, 123, 236, 0.2);
+}
+
+.form-hint {
+    display: block;
+    font-size: 12px;
+    color: var(--text);
+    opacity: 0.6;
+    margin-top: -8px;
+    margin-bottom: 12px;
+}
+
+/* Buttons in Settings */
+#update-profile-btn {
+    width: 100%;
+    padding: 12px;
     background: var(--primary);
     color: white;
     border: none;
     border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-top: 10px;
+    transition: background 0.2s;
+}
+
+#update-profile-btn:hover {
+    background: var(--secondary);
+}
+
+#update-profile-btn:disabled {
+    background: var(--border);
+    cursor: not-allowed;
+}
+
+.logout-btn {
+    width: 100%;
+    padding: 12px;
+    background: var(--danger);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.logout-btn:hover {
+    background: #d63031;
+}
+
+.close-btn {
+    width: 100%;
+    padding: 10px;
+    background: var(--bg);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    cursor: pointer;
+    margin-top: 20px;
+    transition: background 0.2s;
+}
+
+.close-btn:hover {
+    background: var(--border);
+}
+
+/* Success/Error Messages */
+#settings-message {
+    padding: 10px;
+    border-radius: 6px;
+    margin: 10px 0;
+    text-align: center;
+    font-size: 14px;
+    display: none;
+}
+
+#settings-message.success {
+    background: rgba(32, 191, 107, 0.1);
+    color: var(--success);
+    border: 1px solid var(--success);
+    display: block;
+}
+
+#settings-message.error {
+    background: rgba(235, 59, 90, 0.1);
+    color: var(--danger);
+    border: 1px solid var(--danger);
+    display: block;
+}
+
+/* Responsive Settings */
+@media (max-width: 480px) {
+    #settings-panel {
+        width: 100%;
+    }
 }
 
 

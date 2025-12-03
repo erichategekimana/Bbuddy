@@ -7,10 +7,9 @@ quotes_bp = Blueprint('quotes', __name__)
 
 # Updated model list with Gemini 2.5 options
 MODEL_OPTIONS = [
-    "gemini-2.0-flash-exp",      # Latest experimental
+    "gemini-2.5-flash",
     "gemini-2.0-flash",          # Latest stable
     "gemini-1.5-flash",          # Previous good option
-    "gemini-1.5-pro",            # Previous pro version
 ]
 
 # Fallback quotes
@@ -97,7 +96,7 @@ def get_gemini_quote(model_name):
         print(f"DEBUG: Error with {model_name}: {str(e)[:100]}")
         return None
 
-@quote_bp.route("/quote", methods=["GET"])
+@quotes_bp.route("/quote", methods=["GET"])
 def get_quote():
     """Get a motivational quote - try Gemini first, then fallback"""
     
@@ -128,7 +127,7 @@ def get_quote():
     }), 200
 
 # TEST endpoint to check available models
-@quote_bp.route("/test-models", methods=["GET"])
+@quotes_bp.route("/test-models", methods=["GET"])
 def test_models():
     """Test which models are available"""
     test_url = "https://generativelanguage.googleapis.com/v1beta/models"

@@ -1,9 +1,12 @@
-from flask import Blueprint, jsonify, current_app
-import google.generativeai as genai
-import os
+import requests
 import random
+from flask import Blueprint, jsonify
+# Assuming config.py has a variable named GEMINI_API_KEY
+from config import GEMINI_API_KEY 
 
-quotes_bp = Blueprint("quotes", __name__)
+quote_bp = Blueprint('quote', __name__)
+MODEL_NAME = "gemini-2.5-flash"
+
 
 # Fallback quotes in case Gemini API fails
 FALLBACK_QUOTES = [
@@ -19,73 +22,71 @@ FALLBACK_QUOTES = [
     "Financial peace isn't the acquisition of stuff. It's learning to live on less than you make."
 ]
 
-def get_gemini_quote():
-    """Get a motivational quote from Gemini API"""
+
+@quote_bp.route("/quote", methods=["GET"])
+def get_quote():
+    # 1. FIX: Use f-string and the correct 'generateContent' endpoint
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL_NAME}:generateContent"
+    
+    # 2. IMPROVEMENT: Pass API key in the header
+    headers = {
+        "Content-Type": "application/json",
+        "x-goog-api-key": GEMINI_API_KEY 
+    }
+    
+    data = {
+        "contents": [{
+            "parts": [{
+                "text": """Give me a short, motivational quote about personal finance, budgeting, or saving money. 
+                Make it inspiring and practical. Keep it under 100 characters. 
+                Return ONLY the quote text, nothing else."""
+            }]
+        }],
+        "generationConfig": {
+            "temperature": 0.7,
+            "maxOutputTokens": 100,
+        }
+    }
+
     try:
-        # Get API key from environment variable
-        api_key = os.environ.get("GEMINI_API_KEY")
-        if not api_key:
-            print("GEMINI_API_KEY environment variable not set")
-            return None
-            
-        # Configure Gemini
-        genai.configure(api_key=api_key)
+        response = requests.post(url, headers=headers, json=data)
+        response.raise_for_status()
         
-        # Create the model
-        model = genai.GenerativeModel('gemini-pro')
+        response_json = response.json()
+        print(f"DEBUG: Full response: {response_json}")  # Debug
         
-        # Create prompt for financial/budgeting quote
-        prompt = """Give me a short, motivational quote about personal finance, budgeting, or saving money. 
-        Make it inspiring and practical. Keep it under 120 characters. 
-        Return ONLY the quote text, nothing else."""
+        # Try to extract quote - Gemini REST API can have different structures
+        quote = None
         
-        # Generate response
-        response = model.generate_content(prompt)
+        # Structure 1: Direct response
+        if "candidates" in response_json and response_json["candidates"]:
+            candidate = response_json["candidates"][0]
+            if "content" in candidate and "parts" in candidate["content"]:
+                quote = candidate["content"]["parts"][0]["text"]
         
-        # Extract and clean the quote
-        quote = response.text.strip()
+        # Structure 2: Nested differently
+        elif "contents" in response_json and response_json["contents"]:
+            content = response_json["contents"][0]
+            if "parts" in content and content["parts"]:
+                quote = content["parts"][0]["text"]
         
-        # Remove quotes if Gemini wrapped it in quotes
-        if quote.startswith('"') and quote.endswith('"'):
-            quote = quote[1:-1]
-        elif quote.startswith("'") and quote.endswith("'"):
-            quote = quote[1:-1]
-            
-        # Ensure it's not empty
-        if quote and len(quote) > 10:
-            return quote
+        # Clean up if we got a quote
+        if quote:
+            quote = quote.strip()
+            # Remove surrounding quotes
+            if (quote.startswith('"') and quote.endswith('"')) or \
+               (quote.startswith("'") and quote.endswith("'")):
+                quote = quote[1:-1]
+            return jsonify({"quote": quote}), 200
         else:
-            return None
+            print(f"DEBUG: Could not extract quote from: {response_json}")
+            return fallback_quote()
             
     except Exception as e:
         print(f"Error getting Gemini quote: {e}")
-        return None
+        return fallback_quote()
+    
 
-@quotes_bp.route("/quote", methods=["GET"])
-def get_quote():
-    """Get a random motivational quote"""
-    try:
-        # Try to get quote from Gemini
-        gemini_quote = get_gemini_quote()
-        
-        if gemini_quote:
-            return jsonify({
-                "quote": gemini_quote,
-                "source": "gemini"
-            }), 200
-        else:
-            # Fallback to random local quote
-            random_quote = random.choice(FALLBACK_QUOTES)
-            return jsonify({
-                "quote": random_quote,
-                "source": "fallback"
-            }), 200
-            
-    except Exception as e:
-        print(f"Error in get_quote route: {e}")
-        # Always return something even if there's an error
-        random_quote = random.choice(FALLBACK_QUOTES)
-        return jsonify({
-            "quote": random_quote,
-            "source": "error_fallback"
-        }), 200
+def fallback_quote():
+    random_quote = random.choice(FALLBACK_QUOTES)
+    return jsonify({"quote": random_quote}), 200

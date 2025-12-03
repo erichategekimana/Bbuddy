@@ -291,6 +291,24 @@ function showSimpleNotification(message, type = 'info') {
 }
 
 
+/* --------------------------
+   UPDATE PROFILE DISPLAY
+--------------------------- */
+function updateProfileDisplay() {
+    if (userData.profile) {
+        if (settingsUsername) {
+            settingsUsername.value = userData.profile.username || '';
+        }
+        if (settingsEmail) {
+            settingsEmail.value = userData.profile.email || '';
+        }
+        console.log('Profile display updated');
+    }
+}
+
+
+
+
 
 /* --------------------------
    SETTINGS MESSAGE FUNCTIONS

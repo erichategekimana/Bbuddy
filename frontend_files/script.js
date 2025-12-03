@@ -434,6 +434,7 @@ async function loadAllUserData() {
         await loadExpenses();
         
         console.log("All user data loaded successfully");
+        await loadQuote();
         updateAllDisplays();
         updateExpensePlanDropdown(); // ← NEED TO ADD THIS!
     } catch (error) {
@@ -579,6 +580,7 @@ navButtons.forEach(button => {
                 case "home-section":
                     await loadAllUserData(); // Reload all data for home
                     showSection(homeSection);
+                     await loadQuote(); //  get fresh quote avery reload
                     break;
                 case "dashboard-section":
                     await loadAllUserData(); // Reload all data for dashboard
@@ -1242,35 +1244,39 @@ function closeSettingsPanel() {
 }
 
 /* --------------------------
-   UPDATE PROFILE BUTTON
---------------------------- */
-if (updateProfileBtn) {
-    updateProfileBtn.addEventListener('click', updateProfile);
-}
-
-
-/* --------------------------
    QUOTES
 --------------------------- */
 async function loadQuote() {
     try {
+        showLoading(); // Show loading while fetching quote
         const res = await fetch(`${API}/quotes/quote`);
+        
         if (res.ok) {
             const data = await res.json();
+            // Display the Gemini-generated quote
             quoteElement.textContent = `"${data.quote}"`;
+            console.log(`Quote loaded from ${data.source || 'unknown'}`);
         } else {
-            const fallbackQuotes = [
-                "Take control of your finances, one expense at a time.",
-                "The best time to start budgeting was yesterday. The second best time is now.",
-                "A budget is telling your money where to go instead of wondering where it went.",
-                "Financial freedom is available to those who learn about it and work for it."
-            ];
-            const randomQuote = fallbackQuotes[Math.floor(Math.random() * fallbackQuotes.length)];
-            quoteElement.textContent = `"${randomQuote}"`;
+            // Fallback if API fails
+            fallbackQuote();
         }
     } catch (error) {
-        quoteElement.textContent = '"Take control of your finances, one expense at a time."';
+        console.error('Error loading quote:', error);
+        fallbackQuote();
+    } finally {
+        hideLoading();
     }
+}
+
+function fallbackQuote() {
+    const fallbackQuotes = [
+        "Take control of your finances, one expense at a time.",
+        "The best time to start budgeting was yesterday. The second best time is now.",
+        "A budget is telling your money where to go instead of wondering where it went.",
+        "Financial freedom is available to those who learn about it and work for it."
+    ];
+    const randomQuote = fallbackQuotes[Math.floor(Math.random() * fallbackQuotes.length)];
+    quoteElement.textContent = `"${randomQuote}"`;
 }
 
 /* --------------------------

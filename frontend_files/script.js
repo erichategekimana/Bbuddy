@@ -12,6 +12,10 @@ const addExpenseSection = document.getElementById("add-expense-section");
 /* NAV BUTTONS */
 const navButtons = document.querySelectorAll(".nav-btn");
 
+/* TOP BAR ELEMENTS */
+const usernameDisplay = document.getElementById("username-display");
+
+
 /* FORMS */
 const loginForm = document.getElementById("login-form");
 const registerForm = document.getElementById("register-form");
@@ -301,6 +305,11 @@ function updateProfileDisplay() {
         }
         if (settingsEmail) {
             settingsEmail.value = userData.profile.email || '';
+        }
+
+        //  Display username in top bar
+        if (usernameDisplay) {
+            usernameDisplay.textContent = `Hello, ${userData.profile.username}`;
         }
         console.log('Profile display updated');
     }

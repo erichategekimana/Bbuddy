@@ -44,7 +44,7 @@ def get_gemini_quote(model_name):
         "contents": [{
             "parts": [{
                 "text": """Give me a short, motivational quote about personal finance, budgeting, or saving money. 
-                Make it inspiring and practical. Keep it under 100 characters. 
+                Make it inspiring and practical. Keep it under 180 characters. 
                 Return ONLY the quote text, nothing else."""
             }]
         }],

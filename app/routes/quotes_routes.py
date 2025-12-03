@@ -1,14 +1,19 @@
 import requests
 import random
 from flask import Blueprint, jsonify
-# Assuming config.py has a variable named GEMINI_API_KEY
-from config import GEMINI_API_KEY 
+from config import GEMINI_API_KEY
 
-quotes_bp = Blueprint('quote', __name__)
-MODEL_NAME = "gemini-2.5-flash"
+quotes_bp = Blueprint('quotes', __name__)
 
+# Updated model list with Gemini 2.5 options
+MODEL_OPTIONS = [
+    "gemini-2.0-flash-exp",      # Latest experimental
+    "gemini-2.0-flash",          # Latest stable
+    "gemini-1.5-flash",          # Previous good option
+    "gemini-1.5-pro",            # Previous pro version
+]
 
-# Fallback quotes in case Gemini API fails
+# Fallback quotes
 FALLBACK_QUOTES = [
     "Take control of your finances, one expense at a time.",
     "The best time to start budgeting was yesterday. The second best time is now.",
@@ -23,17 +28,19 @@ FALLBACK_QUOTES = [
 ]
 
 
-@quotes_bp.route("/quote", methods=["GET"])
-def get_quote():
-    # 1. FIX: Use f-string and the correct 'generateContent' endpoint
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL_NAME}:generateContent"
+def get_gemini_quote(model_name):
+    """Try to get a quote from Gemini API with given model"""
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent"
     
-    # 2. IMPROVEMENT: Pass API key in the header
+    print(f"DEBUG: Using model: {model_name}")
+    print(f"DEBUG: API Key: {GEMINI_API_KEY[:8]}...")
+    
     headers = {
         "Content-Type": "application/json",
-        "x-goog-api-key": GEMINI_API_KEY 
+        "x-goog-api-key": GEMINI_API_KEY
     }
     
+    # Simpler, cleaner prompt
     data = {
         "contents": [{
             "parts": [{
@@ -43,50 +50,98 @@ def get_quote():
             }]
         }],
         "generationConfig": {
-            "temperature": 0.7,
-            "maxOutputTokens": 100,
+            "temperature": 0.8,  # Slightly more creative
+            "maxOutputTokens": 50,
         }
     }
-
+    
     try:
-        response = requests.post(url, headers=headers, json=data)
-        response.raise_for_status()
+        response = requests.post(url, headers=headers, json=data, timeout=5)
+        print(f"DEBUG: Status: {response.status_code}")
         
+        if response.status_code != 200:
+            print(f"DEBUG: Error: {response.text[:100]}")
+            return None
+            
         response_json = response.json()
-        print(f"DEBUG: Full response: {response_json}")  # Debug
         
-        # Try to extract quote - Gemini REST API can have different structures
+        # Extract quote - Gemini 2.x might have different structure
         quote = None
         
-        # Structure 1: Direct response
+        # Try different response structures
         if "candidates" in response_json and response_json["candidates"]:
             candidate = response_json["candidates"][0]
             if "content" in candidate and "parts" in candidate["content"]:
                 quote = candidate["content"]["parts"][0]["text"]
         
-        # Structure 2: Nested differently
-        elif "contents" in response_json and response_json["contents"]:
-            content = response_json["contents"][0]
-            if "parts" in content and content["parts"]:
-                quote = content["parts"][0]["text"]
+        # Alternative structure
+        elif "text" in response_json:
+            quote = response_json["text"]
         
-        # Clean up if we got a quote
+        # Direct response
+        elif "response" in response_json:
+            quote = response_json["response"]
+        
         if quote:
             quote = quote.strip()
-            # Remove surrounding quotes
-            if (quote.startswith('"') and quote.endswith('"')) or \
-               (quote.startswith("'") and quote.endswith("'")):
+            # Clean up quotes
+            if len(quote) > 2 and quote[0] == '"' and quote[-1] == '"':
                 quote = quote[1:-1]
-            return jsonify({"quote": quote}), 200
-        else:
-            print(f"DEBUG: Could not extract quote from: {response_json}")
-            return fallback_quote()
+            print(f"DEBUG: Success! Quote: {quote}")
+            return quote
             
+        print(f"DEBUG: Unexpected response: {response_json}")
+        return None
+        
     except Exception as e:
-        print(f"Error getting Gemini quote: {e}")
-        return fallback_quote()
-    
+        print(f"DEBUG: Error with {model_name}: {str(e)[:100]}")
+        return None
 
-def fallback_quote():
+@quote_bp.route("/quote", methods=["GET"])
+def get_quote():
+    """Get a motivational quote - try Gemini first, then fallback"""
+    
+    print("\n" + "="*50)
+    print("DEBUG: /quote endpoint called")
+    
+    # Try each model until one works
+    for model_name in MODEL_OPTIONS:
+        print(f"\nDEBUG: Trying model: {model_name}")
+        quote = get_gemini_quote(model_name)
+        if quote:
+            print(f"DEBUG: ✓ Success with {model_name}")
+            return jsonify({
+                "quote": quote, 
+                "source": "gemini",
+                "model": model_name
+            }), 200
+        else:
+            print(f"DEBUG: ✗ Failed with {model_name}")
+    
+    # If all models fail, use fallback
+    print("\nDEBUG: All models failed, using fallback")
     random_quote = random.choice(FALLBACK_QUOTES)
-    return jsonify({"quote": random_quote}), 200
+    return jsonify({
+        "quote": random_quote, 
+        "source": "fallback",
+        "model": "none"
+    }), 200
+
+# TEST endpoint to check available models
+@quote_bp.route("/test-models", methods=["GET"])
+def test_models():
+    """Test which models are available"""
+    test_url = "https://generativelanguage.googleapis.com/v1beta/models"
+    headers = {"x-goog-api-key": GEMINI_API_KEY}
+    
+    try:
+        response = requests.get(test_url, headers=headers)
+        models = response.json().get("models", [])
+        
+        model_names = [model["name"] for model in models]
+        return jsonify({
+            "available_models": model_names,
+            "total": len(model_names)
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500

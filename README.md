@@ -31,22 +31,24 @@ Is built with flask at the backend and javascript at the fronend to provide full
 
 ## API Usage & Best Practices
 
-External API used in this app was from Gemini (goggle generativeai) which give access to different gemini models including gemini-2.0-flash, gemini-1.5-pro, and latest version gemini-2.0-flash.
+External API used in this app was from Gemini (Google generativeai), which give access to different gemini models including gemini-2.0-flash, gemini-1.5-pro, and the latest version Gemini-2.0-flash.
 
 Internal API also used to connect this app with backend severs to provide better connection
 
 
 Getting started with how to use Bbuddy publicly.
 
-Prerequisites
+# Prerequisites
 1. Browser( to run web app)
 2. Internet connection (for API calls)
 
-Run:
+## Run:
 Open your browser and inter: www.erictecj.tech
 
 
-Deplayment and load balancing
+# Deployment and load balancing
+
+
 
 
 

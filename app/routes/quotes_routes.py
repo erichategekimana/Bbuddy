@@ -4,7 +4,7 @@ from flask import Blueprint, jsonify
 # Assuming config.py has a variable named GEMINI_API_KEY
 from config import GEMINI_API_KEY 
 
-quote_bp = Blueprint('quote', __name__)
+quotes_bp = Blueprint('quote', __name__)
 MODEL_NAME = "gemini-2.5-flash"
 
 
@@ -23,7 +23,7 @@ FALLBACK_QUOTES = [
 ]
 
 
-@quote_bp.route("/quote", methods=["GET"])
+@quotes_bp.route("/quote", methods=["GET"])
 def get_quote():
     # 1. FIX: Use f-string and the correct 'generateContent' endpoint
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL_NAME}:generateContent"

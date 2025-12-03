@@ -66,6 +66,7 @@ N.B: In the beginning of this project, Bbuddy was deployed on two servers(web-01
    - This step include creating html, css, and java script for better user interface
    - On lb-01, I pulled and copy those files into:
 <img width="303" height="210" alt="image" src="https://github.com/user-attachments/assets/91213376-6729-44f0-b3d0-5cff319129e9" />
+
 4. Request Gamini API from google studio
 5. Connect and verfy that frontend and backend can work together(make API calls successfully)
    - This step includes testing from servers (http://98.94.26.92:5000/api/quotes/quote)
@@ -79,11 +80,12 @@ N.B: In the beginning of this project, Bbuddy was deployed on two servers(web-01
 
 Project structure:
 
-1. Frontend: 
+1. Frontend:
+
 <img width="174" height="94" alt="Screenshot 2025-12-03 115919" src="https://github.com/user-attachments/assets/47811ce5-0da3-4df9-b4fa-3620ec12cc8e" />
 
 
-2. Backend: 
+3. Backend: 
 
 <img width="457" height="751" alt="image" src="https://github.com/user-attachments/assets/9632f948-d617-4179-801e-1a9df3922f53" />
 
@@ -91,12 +93,12 @@ Project structure:
 Bbuddy project is licensed under the MIT License.
 
 # Commendation
-Google studion: Bbuddy app uses Gemini-2.0-flash model to generate qoutes for users to motivate and insipire them to keep in the plan!
+Google studio: Bbuddy app uses Gemini-2.0-flash model to generate qoutes for users to motivate and insipire them to keep in the plan!
 
 ## contribution and support
-. Clone this repository.
-. Create a feature branch
-. Commit and push your changes.
+- Clone this repository
+- Create a feature branch
+- Commit and push your changes.
 
 If you have questions or support, open an issue in this repository or use [erichategekiman](https://github.com/erichategekimana)
 

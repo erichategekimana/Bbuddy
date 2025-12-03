@@ -1,39 +1,35 @@
-Bbuddy app
+# Bbuddy app
 
 Bbuddy is a personal budget managment app that help users to track thier expenses and how much they're spending based on thier budget. It use Gemini API to generate quotes for user to keep them insipered and motivated.
 
 Is built with flask at the backend and javascript at the fronend to provide full control for the users by letting them control thier finances
 
 
-Features:
+## Features:
 
-Budget planning:
+## Budget planning:
+- Create custom budget plans with categories
+- Set spending limits for specific time periods
+- Visual progress tracking with color-coded indicators
+- Real-time budget remaining calculations
 
-Create custom budget plans with categories
-Set spending limits for specific time periods
-Visual progress tracking with color-coded indicators
-Real-time budget remaining calculations
+## Smart Features
+- It use Gemini 2.0 flash to generate motivation quote(AI Powered motivation quote)
+- dark/light theme taggle
+- quicky status dashboard
+- color wornings(based on how much you're spending)
+- Responsive settings panel
 
-Smart Features
+## Expense Tracking
+- Data-based expenses
+- Each expense depends on plan
+- Categorize expense by categories
 
-It use Gemini 2.0 flash to generate motivation quote(AI Powered motivation quote)
-dark/light theme taggle
-quicky status dashboard
-color wornings(based on how much you're spending)
-Responsive settings panel
+## Authentication and user managment system
+- JWT is used to grant permission to the user(Secure login)
+- Session-based authentication(1h)
 
-Expense Tracking
-
-Data-based expenses
-Each expense depends on plan
-Categorize expense by categories
-
-Authentication and user managment system
-
-JWT is used to grant permission to the user(Secure login)
-Session-based authentication(1h)
-
-API Usage & Best Practices
+## API Usage & Best Practices
 
 External API used in this app was from Gemini (goggle generativeai) which give access to different gemini models including gemini-2.0-flash, gemini-1.5-pro, and latest version gemini-2.0-flash.
 

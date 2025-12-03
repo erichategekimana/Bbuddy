@@ -5,6 +5,9 @@ Bbuddy is a personal budget managment app that help users to track thier expense
 Is built with flask at the backend and javascript at the fronend to provide full control for the users by letting them control thier finances
 
 
+Video link:  https://drive.google.com/file/d/1hQnNA6dBNWMm3wOy_JmE46UJx_ETx6s6/view?usp=sharing
+
+
 ## Features:
 
 ## Budget planning:

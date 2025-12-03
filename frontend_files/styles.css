@@ -238,37 +238,6 @@ body.dark {
 
 
 
-/* -------------------------------------------------------
-   USER INFO IN TOP BAR
--------------------------------------------------------- */
-#user-info {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-}
-
-#username-display {
-    font-weight: 500;
-    color: var(--text);
-    font-size: 14px;
-    background: var(--bg);
-    padding: 6px 12px;
-    border-radius: 20px;
-    border: 1px solid var(--border);
-}
-
-/* For dark theme */
-body.dark #username-display {
-    background: rgba(255, 255, 255, 0.1);
-    color: white;
-}
-
-/* Adjust settings button spacing */
-#settings-btn {
-    margin-left: 0; /* Remove any left margin if exists */
-}
-
-
 
 
 /* -------------------------------------------------------

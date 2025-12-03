@@ -12,8 +12,8 @@ const addExpenseSection = document.getElementById("add-expense-section");
 /* NAV BUTTONS */
 const navButtons = document.querySelectorAll(".nav-btn");
 
-/* TOP BAR ELEMENTS */
-const usernameDisplay = document.getElementById("username-display");
+// /* TOP BAR ELEMENTS */
+// const usernameDisplay = document.getElementById("username-display");
 
 
 /* FORMS */
@@ -451,11 +451,6 @@ async function loadAllUserData() {
     // Remove the loading prevention logic since we want fresh data on section switches
     showLoading();
 
-
-    //  Display username in top bar
-    if (usernameDisplay) {
-        usernameDisplay.textContent = `Hello, ${userData.profile.username}`;
-    }
     
     try {
         console.log("Loading all user data...");
